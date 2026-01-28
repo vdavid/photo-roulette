@@ -1,5 +1,11 @@
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
 
+// Helper to navigate to Photo Roulette from game selector
+async function selectPhotoRoulette(page: Page) {
+	await page.locator('.game-card').filter({ hasText: 'Photo Roulette' }).click();
+	await expect(page.getByRole('heading', { name: 'Photo Roulette' })).toBeVisible();
+}
+
 /**
  * Full game E2E test with 4 players
  *
@@ -69,6 +75,9 @@ test.describe('Full 4-player game', () => {
 					resultDisplayMs;
 			}, RESULT_DISPLAY_MS);
 
+			// Select Photo Roulette from game selector
+			await selectPhotoRoulette(host.page);
+
 			await host.page.getByRole('button', { name: 'Host a game' }).click();
 			await host.page.getByLabel('Your name').fill(host.name);
 			await host.page.getByRole('button', { name: 'Create game' }).click();
@@ -93,6 +102,9 @@ test.describe('Full 4-player game', () => {
 					(window as unknown as { __TEST_RESULT_DISPLAY_MS__: number }).__TEST_RESULT_DISPLAY_MS__ =
 						resultDisplayMs;
 				}, RESULT_DISPLAY_MS);
+
+				// Select Photo Roulette from game selector
+				await selectPhotoRoulette(player.page);
 
 				await player.page.getByRole('button', { name: 'Join a game' }).click();
 				await player.page.getByLabel('Room code').fill(roomCode);

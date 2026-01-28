@@ -1,5 +1,11 @@
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
 
+// Helper to navigate to Photo Roulette from game selector
+async function selectPhotoRoulette(page: Page) {
+	await page.locator('.game-card').filter({ hasText: 'Photo Roulette' }).click();
+	await expect(page.getByRole('heading', { name: 'Photo Roulette' })).toBeVisible();
+}
+
 /**
  * Spectator mode E2E test with 3 players
  *
@@ -59,6 +65,9 @@ test.describe('Spectator mode', () => {
 					resultDisplayMs;
 			}, RESULT_DISPLAY_MS);
 
+			// Select Photo Roulette from game selector
+			await selectPhotoRoulette(host.page);
+
 			await host.page.getByRole('button', { name: 'Host a game' }).click();
 			await host.page.getByLabel('Your name').fill(host.name);
 			await host.page.getByRole('button', { name: 'Create game' }).click();
@@ -80,6 +89,9 @@ test.describe('Spectator mode', () => {
 					(window as unknown as { __TEST_RESULT_DISPLAY_MS__: number }).__TEST_RESULT_DISPLAY_MS__ =
 						resultDisplayMs;
 				}, RESULT_DISPLAY_MS);
+
+				// Select Photo Roulette from game selector
+				await selectPhotoRoulette(player.page);
 
 				await player.page.getByRole('button', { name: 'Join a game' }).click();
 				await player.page.getByLabel('Room code').fill(roomCode);
@@ -239,7 +251,7 @@ test.describe('Spectator mode', () => {
 
 			// Spectator (CCC) should be on the leaderboard - they earned points for correct guesses
 			// but no "featured" points since their photos were never shown
-			await expect(host.page.getByText('CCC')).toBeVisible();
+			await expect(host.page.getByText('CCC').first()).toBeVisible();
 
 			console.log('Spectator mode test completed successfully!');
 		});

@@ -1,8 +1,15 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Host game flow', () => {
+// Helper to navigate to Photo Roulette from game selector
+async function selectPhotoRoulette(page: import('@playwright/test').Page) {
+	await page.goto('/');
+	await page.locator('.game-card').filter({ hasText: 'Photo Roulette' }).click();
+	await expect(page.getByRole('heading', { name: 'Photo Roulette' })).toBeVisible();
+}
+
+test.describe('Photo Roulette host game flow', () => {
 	test('can create a game and enter lobby', async ({ page }) => {
-		await page.goto('/');
+		await selectPhotoRoulette(page);
 
 		// Navigate to host form
 		await page.getByRole('button', { name: 'Host a game' }).click();
@@ -42,7 +49,7 @@ test.describe('Host game flow', () => {
 	});
 
 	test('can copy room code', async ({ page }) => {
-		await page.goto('/');
+		await selectPhotoRoulette(page);
 
 		// Create a game
 		await page.getByRole('button', { name: 'Host a game' }).click();
@@ -61,7 +68,7 @@ test.describe('Host game flow', () => {
 	});
 
 	test('host is shown in player list with host badge', async ({ page }) => {
-		await page.goto('/');
+		await selectPhotoRoulette(page);
 
 		// Create a game
 		await page.getByRole('button', { name: 'Host a game' }).click();
@@ -80,7 +87,7 @@ test.describe('Host game flow', () => {
 	});
 
 	test('can leave the game from lobby', async ({ page }) => {
-		await page.goto('/');
+		await selectPhotoRoulette(page);
 
 		// Create a game
 		await page.getByRole('button', { name: 'Host a game' }).click();
@@ -99,7 +106,7 @@ test.describe('Host game flow', () => {
 	});
 
 	test('can change game settings', async ({ page }) => {
-		await page.goto('/');
+		await selectPhotoRoulette(page);
 
 		// Create a game
 		await page.getByRole('button', { name: 'Host a game' }).click();

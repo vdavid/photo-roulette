@@ -1,11 +1,18 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Landing page', () => {
-	test('shows welcome screen with host and join buttons', async ({ page }) => {
-		await page.goto('/');
+// Helper to navigate to Photo Roulette from game selector
+async function selectPhotoRoulette(page: import('@playwright/test').Page) {
+	await page.goto('/');
+	await page.locator('.game-card').filter({ hasText: 'Photo Roulette' }).click();
+	await expect(page.getByRole('heading', { name: 'Photo Roulette' })).toBeVisible();
+}
 
-		// Check header elements
-		await expect(page.getByText('Photo Roulette')).toBeVisible();
+test.describe('Photo Roulette landing page', () => {
+	test('shows welcome screen with host and join buttons', async ({ page }) => {
+		await selectPhotoRoulette(page);
+
+		// Check header elements (use getByRole to avoid strict mode violations)
+		await expect(page.getByRole('heading', { name: 'Photo Roulette' })).toBeVisible();
 		await expect(page.getByText('Guess whose photo it is!')).toBeVisible();
 
 		// Check buttons
@@ -14,7 +21,7 @@ test.describe('Landing page', () => {
 	});
 
 	test('can navigate to host game form', async ({ page }) => {
-		await page.goto('/');
+		await selectPhotoRoulette(page);
 
 		await page.getByRole('button', { name: 'Host a game' }).click();
 
@@ -29,7 +36,7 @@ test.describe('Landing page', () => {
 	});
 
 	test('can navigate to join game form', async ({ page }) => {
-		await page.goto('/');
+		await selectPhotoRoulette(page);
 
 		await page.getByRole('button', { name: 'Join a game' }).click();
 
@@ -43,7 +50,7 @@ test.describe('Landing page', () => {
 	});
 
 	test('can go back from host form to landing', async ({ page }) => {
-		await page.goto('/');
+		await selectPhotoRoulette(page);
 
 		await page.getByRole('button', { name: 'Host a game' }).click();
 		// Wait for form heading (h2)
@@ -54,7 +61,7 @@ test.describe('Landing page', () => {
 	});
 
 	test('can go back from join form to landing', async ({ page }) => {
-		await page.goto('/');
+		await selectPhotoRoulette(page);
 
 		await page.getByRole('button', { name: 'Join a game' }).click();
 		// Wait for form heading (h2)
@@ -65,7 +72,7 @@ test.describe('Landing page', () => {
 	});
 
 	test('shows validation error when trying to host without name', async ({ page }) => {
-		await page.goto('/');
+		await selectPhotoRoulette(page);
 
 		await page.getByRole('button', { name: 'Host a game' }).click();
 		// Wait for form heading (h2)
@@ -78,7 +85,7 @@ test.describe('Landing page', () => {
 	});
 
 	test('shows validation error when trying to join without name or code', async ({ page }) => {
-		await page.goto('/');
+		await selectPhotoRoulette(page);
 
 		await page.getByRole('button', { name: 'Join a game' }).click();
 		// Wait for form heading (h2)
