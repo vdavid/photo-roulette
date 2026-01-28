@@ -12,7 +12,7 @@ import type {
 	Guess,
 	RoundResult,
 	FinalResults,
-} from '../game/types.js';
+} from '$lib/game';
 import type {
 	NetworkMessage,
 	PlayerJoinRequestMessage,

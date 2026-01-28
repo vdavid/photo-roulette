@@ -168,8 +168,8 @@ All components follow the autumn color palette and design principles in [game.md
 
 ### 6.1 End-to-end flow
 
-- [ ] Connect all phases: landing → lobby → game → results
-- [ ] Test with 2+ browser windows
+- [x] Connect all phases: landing → lobby → game → results
+- [x] Test with 2+ browser windows
 - [ ] Test on mobile (phone + laptop)
 
 ### 6.2 Error handling

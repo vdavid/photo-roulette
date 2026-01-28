@@ -6,11 +6,23 @@ import svelteParser from 'svelte-eslint-parser';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 
+// Svelte 5 runes are compiler directives - define them as globals
+const svelteRunes = {
+	$state: 'readonly',
+	$derived: 'readonly',
+	$effect: 'readonly',
+	$props: 'readonly',
+	$bindable: 'readonly',
+	$inspect: 'readonly',
+	$host: 'readonly',
+};
+
 export default [
 	js.configs.recommended,
 	prettier,
 	{
 		files: ['**/*.{js,ts}'],
+		ignores: ['**/*.svelte.ts'],
 		languageOptions: {
 			parser: tsParser,
 			parserOptions: {
@@ -20,6 +32,30 @@ export default [
 			globals: {
 				...globals.browser,
 				...globals.node,
+			},
+		},
+		plugins: {
+			'@typescript-eslint': ts,
+		},
+		rules: {
+			...ts.configs.recommended.rules,
+			'@typescript-eslint/no-unused-vars': [
+				'error',
+				{ argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+			],
+		},
+	},
+	{
+		files: ['**/*.svelte.ts'],
+		languageOptions: {
+			parser: tsParser,
+			parserOptions: {
+				ecmaVersion: 'latest',
+				sourceType: 'module',
+			},
+			globals: {
+				...globals.browser,
+				...svelteRunes,
 			},
 		},
 		plugins: {
@@ -49,6 +85,7 @@ export default [
 		},
 		rules: {
 			...svelte.configs.recommended.rules,
+			'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
 		},
 	},
 	{

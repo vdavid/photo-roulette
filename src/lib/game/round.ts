@@ -8,10 +8,13 @@ import { random } from './random.js';
 
 /**
  * Create an initial photo pool from all players' photos
+ * Photos are sorted by ID for deterministic selection when using seeded random
  */
 export function createPhotoPool(photos: Photo[]): PhotoPool {
+	// Sort photos by ID for deterministic ordering
+	const sortedPhotos = [...photos].sort((a, b) => a.id.localeCompare(b.id));
 	return {
-		available: [...photos],
+		available: sortedPhotos,
 		used: [],
 	};
 }
@@ -103,6 +106,19 @@ export function selectFairPhoto(
 			eligibleOwners.push(ownerId);
 		}
 	}
+
+	// Sort each owner's photos by ID for deterministic ordering
+	for (const photos of photosByOwner.values()) {
+		photos.sort((a, b) => a.id.localeCompare(b.id));
+	}
+
+	// Sort eligible owners by their first photo's ID (stable across runs)
+	// This ensures deterministic ordering even when player IDs (UUIDs) change between runs
+	eligibleOwners.sort((a, b) => {
+		const firstPhotoA = photosByOwner.get(a)![0].id;
+		const firstPhotoB = photosByOwner.get(b)![0].id;
+		return firstPhotoA.localeCompare(firstPhotoB);
+	});
 
 	// Pick a random eligible owner
 	const selectedOwner = eligibleOwners[Math.floor(random() * eligibleOwners.length)];

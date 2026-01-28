@@ -13,7 +13,7 @@ import type {
 	Guess,
 	PlayerScore,
 	FinalResults,
-} from '../game/types.js';
+} from '$lib/game';
 
 // === Message Types ===
 

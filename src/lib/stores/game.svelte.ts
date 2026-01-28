@@ -55,6 +55,20 @@ import { getRankedScores, determineWinner, createEmptyPlayerScore } from '$lib/g
 import { calculateSuperlatives } from '$lib/game/superlatives.js';
 import { setRandomSeed } from '$lib/game/random.js';
 
+/**
+ * Get the round result display duration.
+ * Can be overridden via window.__TEST_RESULT_DISPLAY_MS__ for faster E2E tests.
+ */
+function getResultDisplayMs(): number {
+	if (typeof window !== 'undefined') {
+		const testOverride = (window as unknown as { __TEST_RESULT_DISPLAY_MS__?: number }).__TEST_RESULT_DISPLAY_MS__;
+		if (testOverride !== undefined && testOverride > 0) {
+			return testOverride;
+		}
+	}
+	return ROUND_RESULT_DISPLAY_MS;
+}
+
 /** Log levels */
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -748,13 +762,13 @@ function createGameStore() {
 			// Schedule final results
 			resultsTimer = setTimeout(() => {
 				showFinalResults();
-			}, ROUND_RESULT_DISPLAY_MS);
+			}, getResultDisplayMs());
 		} else {
 			// Schedule next round
 			resultsTimer = setTimeout(() => {
 				internalState.phase = 'playing';
 				startNextRoundInternal();
-			}, ROUND_RESULT_DISPLAY_MS);
+			}, getResultDisplayMs());
 		}
 	}
 

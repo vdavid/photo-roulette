@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import { fetchAuthenticatedImage, revokeBlobUrl } from '$lib/photos/authenticated-fetch.js';
+	import { onDestroy, onMount } from 'svelte'
+	import { fetchAuthenticatedImage, revokeBlobUrl } from '$lib/photos/authenticated-fetch.js'
 
 	interface Props {
 		src: string;
@@ -52,8 +52,7 @@
 		error = null;
 
 		try {
-			const url = await fetchAuthenticatedImage(src);
-			blobUrl = url;
+			blobUrl = await fetchAuthenticatedImage(src);
 			loading = false;
 		} catch (e) {
 			error = e instanceof Error ? e : new Error('Failed to load image');
