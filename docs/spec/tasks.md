@@ -72,23 +72,23 @@ All game logic should be pure TypeScript functions, tested independently of UI.
 
 ### 3.1 Connection management
 
-- [ ] Host: create peer, generate room code
-- [ ] Player: connect to host via room code
-- [ ] Handle connection/disconnection events
-- [ ] Implement reconnection logic
+- [x] Host: create peer, generate room code
+- [x] Player: connect to host via room code
+- [x] Handle connection/disconnection events
+- [x] Implement reconnection logic
 
 ### 3.2 Message protocol
 
-- [ ] Define message types: `player-joined`, `photos-ready`, `start-game`, `round-start`, `guess`, `round-result`, etc.
-- [ ] Implement message serialization/deserialization
-- [ ] Host: broadcast to all players
-- [ ] Player: send to host only
+- [x] Define message types: `player-joined`, `photos-ready`, `start-game`, `round-start`, `guess`, `round-result`, etc.
+- [x] Implement message serialization/deserialization
+- [x] Host: broadcast to all players
+- [x] Player: send to host only
 
 ### 3.3 State synchronization
 
-- [ ] Host: maintain authoritative game state
-- [ ] Broadcast state updates to all players
-- [ ] Handle late joins / reconnects
+- [x] Host: maintain authoritative game state
+- [x] Broadcast state updates to all players
+- [x] Handle late joins / reconnects
 
 ---
 
