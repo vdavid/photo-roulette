@@ -1,42 +1,59 @@
-# sv
+# Photo Roulette
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A browser-based photo guessing game for friends.
+Connect your Google Photos, and guess whose photo is on screen. Fast, chaotic, hilarious.
 
-## Creating a project
+As a tribute to https://photoroulette.app/ which I couldn't use with friends in a remote setting. 
 
-If you're seeing this, you've probably already done this step. Congrats!
+## How to play
 
-```sh
-# create a new project
-npx sv create my-app
+1. **Host a game**: One person creates a room and shares the 4-character code
+2. **Join the room**: Everyone else enters the code to join
+3. **Connect photos**: Each player connects their Google Photos and picks 15-30 photos
+4. **Play**: A random photo appears. Everyone guesses whose photo it is. Fastest correct guess wins bonus points!
+
+**Scoring:**
+
+- Correct guess: +100 points
+- Fastest correct guess: +50 bonus
+- Your photo was shown: +50 points
+
+## Tech stack
+
+- **Frontend**: Svelte 5 + TypeScript
+- **Networking**: PeerJS (WebRTC peer-to-peer)
+- **Photos**: Google Photos Picker API
+- **Backend**: None — it's all client-side!
+
+The game uses a star topology: the host maintains all connections and game state, players connect only to the host.
+
+## Development
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start dev server
+pnpm dev
+
+# Run tests
+pnpm test
+
+# Lint and format
+pnpm lint
+pnpm format
 ```
 
-To recreate this project with the same configuration:
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed architecture and code style guidelines.
 
-```sh
-# recreate this project
-pnpm dlx sv create --template minimal --types ts --install pnpm .
-```
+## Test mode
 
-## Developing
+For testing without Google Photos, use a player name with 3 identical uppercase letters (AAA, BBB, CCC, etc.). The game will generate test images automatically — no OAuth required.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## Deployment
 
-```sh
-npm run dev
+See [docs/releasing.md](docs/releasing.md) for build and deployment instructions.
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+## License
 
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+MIT

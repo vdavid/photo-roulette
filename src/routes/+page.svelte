@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/public'
-	import { Final, Game, Landing, Lobby, Results } from '$lib/views'
-	import { gameStore } from '$lib/stores/game.svelte.js'
-	import { ensureValidToken, isTestPlayer, openBlankPickerWindow, pickPhotos } from '$lib/photos'
-	import { Spinner } from '$lib/components'
+	import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/public';
+	import { Final, Game, Landing, Lobby, Results } from '$lib/views';
+	import { gameStore } from '$lib/stores/game.svelte.js';
+	import { ensureValidToken, isTestPlayer, openBlankPickerWindow, pickPhotos } from '$lib/photos';
+	import { Spinner } from '$lib/components';
 
 	// Set up logging for debugging
 	gameStore.setLogger((level, message, data) => {

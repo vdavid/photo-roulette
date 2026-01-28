@@ -61,7 +61,8 @@ import { setRandomSeed } from '$lib/game/random.js';
  */
 function getResultDisplayMs(): number {
 	if (typeof window !== 'undefined') {
-		const testOverride = (window as unknown as { __TEST_RESULT_DISPLAY_MS__?: number }).__TEST_RESULT_DISPLAY_MS__;
+		const testOverride = (window as unknown as { __TEST_RESULT_DISPLAY_MS__?: number })
+			.__TEST_RESULT_DISPLAY_MS__;
 		if (testOverride !== undefined && testOverride > 0) {
 			return testOverride;
 		}
@@ -587,7 +588,8 @@ function createGameStore() {
 
 		// Check for test seed (injected by E2E tests for deterministic behavior)
 		if (typeof window !== 'undefined') {
-			const testSeed = (window as unknown as { __TEST_RANDOM_SEED__?: number }).__TEST_RANDOM_SEED__;
+			const testSeed = (window as unknown as { __TEST_RANDOM_SEED__?: number })
+				.__TEST_RANDOM_SEED__;
 			if (testSeed !== undefined) {
 				log('info', 'Using test random seed', { seed: testSeed });
 				setRandomSeed(testSeed);

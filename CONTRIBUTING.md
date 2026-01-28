@@ -6,6 +6,60 @@ This doc helps you understand how the codebase fits together.
 
 ---
 
+## Prerequisites
+
+- **Node.js** 20+ (LTS recommended)
+- **pnpm** — install with `npm install -g pnpm`
+
+## Getting started
+
+```bash
+# Clone the repo
+git clone https://github.com/vdavid/photo-roulette.git
+cd photo-roulette
+
+# Install dependencies
+pnpm install
+
+# Start the dev server
+pnpm dev
+```
+
+The app runs at http://localhost:5173.
+
+## Running tests
+
+```bash
+# Run unit tests
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Run E2E tests (requires the dev server running)
+pnpm test:e2e
+```
+
+## Code style
+
+```bash
+# Check for lint errors
+pnpm lint
+
+# Auto-fix lint errors
+pnpm lint:fix
+
+# Check formatting
+pnpm format:check
+
+# Auto-format all files
+pnpm format
+```
+
+The project uses ESLint + Prettier. Format-on-save is configured for VS Code.
+
+---
+
 ## Codebase overview
 
 This is a SvelteKit app with PeerJS for P2P networking. Here's how the pieces connect:
@@ -13,7 +67,7 @@ This is a SvelteKit app with PeerJS for P2P networking. Here's how the pieces co
 ### Architecture pattern
 
 | Directory             | Purpose                                   |
-|-----------------------|-------------------------------------------|
+| --------------------- | ----------------------------------------- |
 | `src/routes/`         | SvelteKit pages and entry point           |
 | `src/lib/stores/`     | Centralized game state (`game.svelte.ts`) |
 | `src/lib/views/`      | Page-level view components                |
@@ -31,12 +85,14 @@ This is a SvelteKit app with PeerJS for P2P networking. Here's how the pieces co
 **File:** `src/lib/views/Landing.svelte`
 
 Handles the initial screen where players choose to host or join a game:
+
 - Player name input (max 20 characters)
 - Room code input (4 uppercase characters for joining)
 - Emoji picker from `ANIMAL_EMOJIS` constant
 - Two modes: "host" and "join"
 
 **Related:**
+
 - `src/lib/components/EmojiPicker.svelte` — Emoji selection component
 - `src/lib/components/Input.svelte` — Reusable input component
 - `src/lib/game/constants.ts` — Contains `ANIMAL_EMOJIS` array
@@ -64,6 +120,7 @@ The `connectPhotos()` function orchestrates photo handling:
    - Returns 15 `ProcessedImage` objects with base64 imageData
 
 **Networking integration:**
+
 - For host: updates own `player.photoIds` and sets `isReady` if >= 15 photos
 - For players: sends photos to host via `playerNetwork.sendPhotos()`
 - Host aggregates all player photos into `photoPool` via `photosSubmitted` event
@@ -75,6 +132,7 @@ The `connectPhotos()` function orchestrates photo handling:
 **Central state management:** `src/lib/stores/game.svelte.ts`
 
 The Svelte store maintains:
+
 - `internalState` (GameState) — authoritative on host
 - Reactive variables for UI updates
 - `syncState()` function to propagate changes
@@ -82,6 +140,7 @@ The Svelte store maintains:
 **Host networking:** `src/lib/networking/host.ts`
 
 Manages:
+
 - **Room creation**: `createRoom()` generates 4-char room code
 - **Player join handling**: validates game isn't full (max 8 players)
 - **Broadcasting**: sends messages to all connected players
@@ -95,6 +154,7 @@ Manages:
 **Player (client) networking:** `src/lib/networking/player.ts`
 
 Handles:
+
 - **Join flow**: connects to host, sends `PlayerJoinRequestMessage`
 - **Event listeners**: listens for 13+ message types
 - **Reconnection**: auto-attempts up to `MAX_RECONNECT_ATTEMPTS` times
@@ -103,6 +163,7 @@ Handles:
 **Message types:** `src/lib/networking/types.ts`
 
 Complete type definitions:
+
 - Connection: `join-request`, `join-accepted`, `join-rejected`, `player-left`, `player-kicked`
 - Lobby: `player-update`, `photos-submitted`, `settings-changed`, `game-starting`
 - Game: `round-start`, `guess-submitted`, `round-end`, `game-end`
@@ -122,11 +183,13 @@ Complete type definitions:
 **File:** `src/lib/game/round.ts`
 
 **Photo pool management:**
+
 ```
 PhotoPool: { available: Photo[], used: Photo[] }
 ```
 
 **Round functions:**
+
 - `createPhotoPool(photos)` — creates initial pool from all players' photos
 - `selectRandomPhoto(pool)` — randomly selects from available pool
   - Moves selection to "used" array
@@ -137,6 +200,7 @@ PhotoPool: { available: Photo[], used: Photo[] }
 - `allPlayersGuessed()` — checks if round can end early
 
 **Game flow in store:**
+
 1. `startGame()`: creates photoPool from all connected photos
 2. `startNextRoundInternal()`: selects random photo, broadcasts to players, starts timer
 3. `endRound()`: completes round, calculates scores, advances or shows final results
@@ -146,7 +210,7 @@ PhotoPool: { available: Photo[], used: Photo[] }
 ### 5. Game logic modules
 
 | Module            | Purpose                                                   |
-|-------------------|-----------------------------------------------------------|
+| ----------------- | --------------------------------------------------------- |
 | `state.ts`        | State machine with valid transitions                      |
 | `round.ts`        | Round creation, photo selection, guess tracking           |
 | `scoring.ts`      | Points calculation (correct=100, fastest=50, featured=50) |

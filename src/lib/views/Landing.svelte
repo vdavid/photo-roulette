@@ -160,6 +160,7 @@
 						placeholder="e.g. X7K2"
 						maxlength={4}
 						autofocus
+						oninput={(v) => (roomCode = v.toUpperCase())}
 					/>
 				</div>
 

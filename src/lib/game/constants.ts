@@ -21,13 +21,13 @@ export const POINTS_FEATURED = 50;
 export const TIMER_OPTIONS = [5, 10, 15, 20] as const;
 
 /** Default timer duration in seconds */
-export const DEFAULT_TIMER_SECONDS = 10;
+export const DEFAULT_TIMER_SECONDS = 20;
 
 /** Duration of the progressive blur reveal in milliseconds */
 export const BLUR_REVEAL_DURATION_MS = 3000;
 
 /** Duration to show round results before auto-advancing in milliseconds */
-export const ROUND_RESULT_DISPLAY_MS = 4500;
+export const ROUND_RESULT_DISPLAY_MS = 5500;
 
 /** Buffer time in ms to sync round start across all players (accounts for network latency) */
 export const ROUND_SYNC_BUFFER_MS = 200;

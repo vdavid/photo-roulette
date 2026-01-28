@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte'
-	import { fetchAuthenticatedImage, revokeBlobUrl } from '$lib/photos/authenticated-fetch.js'
+	import { onDestroy, onMount } from 'svelte';
+	import { fetchAuthenticatedImage, revokeBlobUrl } from '$lib/photos/authenticated-fetch.js';
 
 	interface Props {
 		src: string;

@@ -190,25 +190,25 @@ All components follow the autumn color palette and design principles in [game.md
 
 ### 7.1 README.md
 
-- [ ] Project description
-- [ ] How to play (for friends)
-- [ ] Tech stack overview
-- [ ] Link to development docs
+- [x] Project description
+- [x] How to play (for friends)
+- [x] Tech stack overview
+- [x] Link to development docs
 
 ### 7.2 CONTRIBUTING.md
 
-- [ ] Prerequisites (Node, pnpm)
-- [ ] Clone and install
-- [ ] Run in dev mode
-- [ ] Run tests
-- [ ] Code style / linting
+- [x] Prerequisites (Node, pnpm)
+- [x] Clone and install
+- [x] Run in dev mode
+- [x] Run tests
+- [x] Code style / linting
 
 ### 7.3 docs/releasing.md
 
-- [ ] Build for production
-- [ ] Deploy to GitHub Pages
-- [ ] Deploy to standard Linux server (nginx, etc.)
-- [ ] Environment variables / configuration
+- [x] Build for production
+- [x] Deploy to GitHub Pages
+- [x] Deploy to standard Linux server (nginx, etc.)
+- [x] Environment variables / configuration
 
 ---
 

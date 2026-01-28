@@ -46,7 +46,9 @@
 	const others = $derived(results.rankings.slice(3));
 
 	// Get all game photos as array for slideshow
-	const allGamePhotos = $derived(Array.from(gamePhotoUrls.entries()).map(([id, url]) => ({ id, url })));
+	const allGamePhotos = $derived(
+		Array.from(gamePhotoUrls.entries()).map(([id, url]) => ({ id, url }))
+	);
 
 	// Calculate photos for each superlative type
 	const superlativePhotos = $derived.by(() => {

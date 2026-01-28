@@ -103,4 +103,11 @@ export {
 } from './superlatives.js';
 
 // Random (for deterministic testing)
-export { setRandomSeed, getRandomSeed, resetRandom, random, randomInt, randomElement } from './random.js';
+export {
+	setRandomSeed,
+	getRandomSeed,
+	resetRandom,
+	random,
+	randomInt,
+	randomElement,
+} from './random.js';

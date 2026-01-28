@@ -83,7 +83,7 @@ describe('createInitialState', () => {
 	it('creates state with default settings', () => {
 		const state = createInitialState();
 		expect(state.settings.totalRounds).toBe(12);
-		expect(state.settings.timerSeconds).toBe(10);
+		expect(state.settings.timerSeconds).toBe(20);
 	});
 
 	it('creates state with empty players', () => {
@@ -256,7 +256,7 @@ describe('updateSettings', () => {
 		const newState = updateSettings(state, { totalRounds: 8 });
 
 		expect(newState.settings.totalRounds).toBe(8);
-		expect(newState.settings.timerSeconds).toBe(10); // unchanged
+		expect(newState.settings.timerSeconds).toBe(20); // unchanged
 	});
 
 	it('throws when not in lobby', () => {

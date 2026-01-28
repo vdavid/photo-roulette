@@ -65,7 +65,8 @@ test.describe('Full 4-player game', () => {
 
 			// Inject test configuration for faster results display
 			await host.page.evaluate((resultDisplayMs) => {
-				(window as unknown as { __TEST_RESULT_DISPLAY_MS__: number }).__TEST_RESULT_DISPLAY_MS__ = resultDisplayMs;
+				(window as unknown as { __TEST_RESULT_DISPLAY_MS__: number }).__TEST_RESULT_DISPLAY_MS__ =
+					resultDisplayMs;
 			}, RESULT_DISPLAY_MS);
 
 			await host.page.getByRole('button', { name: 'Host a game' }).click();
@@ -89,7 +90,8 @@ test.describe('Full 4-player game', () => {
 
 				// Inject test configuration for faster results display
 				await player.page.evaluate((resultDisplayMs) => {
-					(window as unknown as { __TEST_RESULT_DISPLAY_MS__: number }).__TEST_RESULT_DISPLAY_MS__ = resultDisplayMs;
+					(window as unknown as { __TEST_RESULT_DISPLAY_MS__: number }).__TEST_RESULT_DISPLAY_MS__ =
+						resultDisplayMs;
 				}, RESULT_DISPLAY_MS);
 
 				await player.page.getByRole('button', { name: 'Join a game' }).click();
@@ -127,17 +129,23 @@ test.describe('Full 4-player game', () => {
 		// === PHASE 4: All players connect photos ===
 		await test.step('All players connect photos', async () => {
 			// Connect photos for all players in parallel
-			await Promise.all(players.map(async (player) => {
-				await player.page.getByRole('button', { name: /Connect your photos/ }).click();
+			await Promise.all(
+				players.map(async (player) => {
+					await player.page.getByRole('button', { name: /Connect your photos/ }).click();
 
-				// Wait for photos to be processed (test mode generates them instantly)
-				// The player card should show "15 photos connected" or similar
-				await expect(player.page.getByText('15 photos connected')).toBeVisible({ timeout: 10000 });
-			}));
+					// Wait for photos to be processed (test mode generates them instantly)
+					// The player card should show "15 photos connected" or similar
+					await expect(player.page.getByText('15 photos connected')).toBeVisible({
+						timeout: 10000,
+					});
+				})
+			);
 
 			// Verify all players show as ready on host's view
 			// Each player card should have ready indicator
-			await expect(host.page.getByRole('button', { name: 'Start game' })).toBeEnabled({ timeout: 5000 });
+			await expect(host.page.getByRole('button', { name: 'Start game' })).toBeEnabled({
+				timeout: 5000,
+			});
 		});
 
 		// === PHASE 5: Inject random seed and start game ===
@@ -153,9 +161,13 @@ test.describe('Full 4-player game', () => {
 			await host.page.getByRole('button', { name: 'Start game' }).click();
 
 			// Wait for game phase on all players
-			await Promise.all(players.map(async (player) => {
-				await expect(player.page.getByText('Whose photo is this?')).toBeVisible({ timeout: 10000 });
-			}));
+			await Promise.all(
+				players.map(async (player) => {
+					await expect(player.page.getByText('Whose photo is this?')).toBeVisible({
+						timeout: 10000,
+					});
+				})
+			);
 		});
 
 		// === PHASE 6: Play through all rounds ===
@@ -169,7 +181,9 @@ test.describe('Full 4-player game', () => {
 		for (let round = 1; round <= ROUND_COUNT; round++) {
 			await test.step(`Play round ${round}`, async () => {
 				// Verify round number is shown
-				await expect(host.page.getByText(`Round ${round} of ${ROUND_COUNT}`)).toBeVisible({ timeout: 10000 });
+				await expect(host.page.getByText(`Round ${round} of ${ROUND_COUNT}`)).toBeVisible({
+					timeout: 10000,
+				});
 
 				// Wait a moment for the photo to load and unblur slightly
 				await host.page.waitForTimeout(1000);
@@ -185,22 +199,26 @@ test.describe('Full 4-player game', () => {
 				// Round 3: Everyone guesses CCC
 				// Round 4: Everyone guesses DDD
 				// Round 5-8: Each player guesses themselves
-				const guessTarget = round <= 4
-					? players[(round - 1) % 4].name
-					: null; // null = guess yourself
+				const guessTarget = round <= 4 ? players[(round - 1) % 4].name : null; // null = guess yourself
 
 				const roundGuesses = new Map<string, string>();
 
 				// All players make their guesses (in parallel to be fast)
-				await Promise.all(players.map(async (player) => {
-					const targetName = guessTarget || player.name;
-					const guessButton = player.page.locator('.guess-button').filter({ hasText: targetName });
-					await guessButton.click();
-					roundGuesses.set(player.name, targetName);
-				}));
+				await Promise.all(
+					players.map(async (player) => {
+						const targetName = guessTarget || player.name;
+						const guessButton = player.page
+							.locator('.guess-button')
+							.filter({ hasText: targetName });
+						await guessButton.click();
+						roundGuesses.set(player.name, targetName);
+					})
+				);
 
 				// Wait for results screen
-				await expect(host.page.getByText(`Round ${round} complete`)).toBeVisible({ timeout: TIMER_SECONDS * 1000 + 5000 });
+				await expect(host.page.getByText(`Round ${round} complete`)).toBeVisible({
+					timeout: TIMER_SECONDS * 1000 + 5000,
+				});
 
 				// Extract the photo owner from results
 				const ownerText = await host.page.locator('.owner-text').textContent();
@@ -223,7 +241,9 @@ test.describe('Full 4-player game', () => {
 
 				// Wait for next round or final results
 				if (round < ROUND_COUNT) {
-					await expect(host.page.getByText(`Round ${round + 1} of ${ROUND_COUNT}`)).toBeVisible({ timeout: 10000 });
+					await expect(host.page.getByText(`Round ${round + 1} of ${ROUND_COUNT}`)).toBeVisible({
+						timeout: 10000,
+					});
 				}
 			});
 		}
@@ -234,9 +254,11 @@ test.describe('Full 4-player game', () => {
 			await expect(host.page.getByText('Game over!')).toBeVisible({ timeout: 15000 });
 
 			// Verify all players see the final screen
-			await Promise.all(players.map(async (player) => {
-				await expect(player.page.getByText('Game over!')).toBeVisible();
-			}));
+			await Promise.all(
+				players.map(async (player) => {
+					await expect(player.page.getByText('Game over!')).toBeVisible();
+				})
+			);
 
 			// Calculate expected scores based on round results
 			const expectedScores = new Map<string, number>();
@@ -278,16 +300,22 @@ test.describe('Full 4-player game', () => {
 			// The podium and leaderboard show player names with their scores
 			for (const [playerName, expectedScore] of expectedScores) {
 				// Find the player's score - it should appear on the page
-				const scoreLocator = host.page.locator(`.player-score:has-text("${expectedScore}")`).first();
+				const scoreLocator = host.page
+					.locator(`.player-score:has-text("${expectedScore}")`)
+					.first();
 				const isVisible = await scoreLocator.isVisible().catch(() => false);
 
 				if (isVisible) {
-					console.log(`${playerName}: expected ${expectedScore}, found ${await scoreLocator.textContent()}`);
+					console.log(
+						`${playerName}: expected ${expectedScore}, found ${await scoreLocator.textContent()}`
+					);
 				} else {
 					// Try looking for the exact number on podium or leaderboard
 					const altScoreLocator = host.page.locator(`text=${expectedScore}`).first();
 					const altVisible = await altScoreLocator.isVisible().catch(() => false);
-					console.log(`${playerName}: expected ${expectedScore}, found ${altVisible ? 'visible' : 'not visible'}`);
+					console.log(
+						`${playerName}: expected ${expectedScore}, found ${altVisible ? 'visible' : 'not visible'}`
+					);
 				}
 			}
 
@@ -316,9 +344,13 @@ test.describe('Full 4-player game', () => {
 			await expect(host.page.getByText('Round 1 of 8')).toBeVisible({ timeout: 10000 });
 
 			// Verify all players are in the game
-			await Promise.all(players.map(async (player) => {
-				await expect(player.page.getByText('Whose photo is this?')).toBeVisible({ timeout: 10000 });
-			}));
+			await Promise.all(
+				players.map(async (player) => {
+					await expect(player.page.getByText('Whose photo is this?')).toBeVisible({
+						timeout: 10000,
+					});
+				})
+			);
 
 			// Leave the rematch game (we don't need to play the full thing again)
 			await host.page.getByRole('button', { name: players[0].name }).click(); // Make a quick guess
