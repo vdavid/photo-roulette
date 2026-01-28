@@ -2,17 +2,16 @@
 
 ## ⚠️ Critical rules (read first)
 
-1. **Use `pnpm`** — not npm, not yarn. Always `pnpm install`, `pnpm add`, `pnpm run`.
-
-2. **Use LATEST package versions** — always check npm for current versions before installing. Don't rely on training data, it's outdated. Run `pnpm add package@latest` or check https://www.npmjs.com/ for the current version.
-
-3. **Sentence case everywhere** — all headings, labels, buttons, UI text must use Sentence case (NOT Title Case). "Start game" not "Start Game". "Connect your photos" not "Connect Your Photos".
+1. **Use `pnpm`**: not npm, not yarn. Always `pnpm install`, `pnpm add`, `pnpm run`.
+2. **Use LATEST package versions**: always check npm for current versions before installing. Don't rely on training data, it's outdated. Run `pnpm add package@latest` or check https://www.npmjs.com/ for the current version.
+3. **Sentence case everywhere**: all headings, labels, buttons, UI text must use Sentence case (NOT Title Case). "Start game" not "Start Game". "Connect your photos" not "Connect Your Photos".
+4. **Read the docs**: Read CONTRIBUTING.md, docs/spec/tech.md, docs/spec/game.md, and @docs/spec/tasks.md to get oriented.
 
 ---
 
 ## Writing style
 
-- Keep the tone **friendly and informal** — this is a game for friends, built by friends
+- Keep the tone **friendly and informal**: this is a game for friends, built by friends
 - Be warm, playful, and human — no corporate speak, no stiff formality
 - When in doubt, write like you're texting a friend (but still clear and helpful)
 
@@ -33,7 +32,7 @@
 
 ## Testing
 
-- **Good test coverage on game logic** — scoring, round progression, timer behavior, edge cases
+- **Good test coverage on game logic**: scoring, round progression, timer behavior, edge cases
 - Game logic should be pure functions that are easy to test without mocking Svelte or PeerJS
 - Use Vitest (comes with SvelteKit)
 - Tests live next to the code they test: `foo.ts` → `foo.test.ts`

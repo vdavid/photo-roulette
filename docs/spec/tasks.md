@@ -195,7 +195,7 @@ All components follow the autumn color palette and design principles in [game.md
 - [ ] Tech stack overview
 - [ ] Link to development docs
 
-### 7.2 docs/development.md
+### 7.2 CONTRIBUTING.md
 
 - [ ] Prerequisites (Node, pnpm)
 - [ ] Clone and install
