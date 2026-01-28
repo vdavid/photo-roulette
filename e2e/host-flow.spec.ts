@@ -37,8 +37,8 @@ test.describe('Host game flow', () => {
 		// Connect photos button should be visible
 		await expect(page.getByRole('button', { name: /Connect your photos/ })).toBeVisible();
 
-		// Start game button should be visible (but disabled since not all ready)
-		await expect(page.getByRole('button', { name: /Waiting for players/ })).toBeVisible();
+		// Start game button should be visible (disabled, showing need for more players)
+		await expect(page.getByRole('button', { name: /Need .* more player/ })).toBeVisible();
 	});
 
 	test('can copy room code', async ({ page }) => {

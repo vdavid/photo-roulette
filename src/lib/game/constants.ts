@@ -6,14 +6,20 @@ import type { AnimalEmoji, GameSettings } from './types.js';
 
 // === Scoring ===
 
-/** Points awarded for a correct guess */
-export const POINTS_CORRECT_GUESS = 100;
+/** Base points awarded for a correct guess (round 1) */
+export const POINTS_CORRECT_GUESS_BASE = 63;
+
+/** Additional points per round for correct guesses */
+export const POINTS_CORRECT_GUESS_INCREMENT = 2;
+
+/** Points subtracted when correctly guessing your own photo */
+export const POINTS_OWN_PHOTO_PENALTY = 22;
 
 /** Bonus points for being the fastest correct guesser */
-export const POINTS_FASTEST_BONUS = 50;
+export const POINTS_FASTEST_BONUS = 28;
 
 /** Points awarded to the player whose photo was featured */
-export const POINTS_FEATURED = 50;
+export const POINTS_FEATURED = 33;
 
 // === Timing ===
 

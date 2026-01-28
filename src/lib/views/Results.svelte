@@ -67,7 +67,7 @@
 	<div class="photo-owner">
 		{#if photoUrl}
 			<div class="photo-thumbnail">
-				<img src={photoUrl} alt="Round photo" />
+				<img src={photoUrl} alt="Round thumbnail" />
 			</div>
 		{/if}
 		<div class="owner-info">

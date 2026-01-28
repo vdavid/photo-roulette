@@ -50,6 +50,7 @@
 </script>
 
 <div class="input-wrapper">
+	<!-- svelte-ignore a11y_autofocus -->
 	<input
 		class="input"
 		class:has-error={!!error}

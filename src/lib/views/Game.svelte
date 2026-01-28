@@ -106,7 +106,7 @@
 			{#if photoUrl}
 				<img
 					src={photoUrl}
-					alt="Guess whose photo this is"
+					alt="Guess who this belongs to"
 					class="photo {imageLoaded ? 'loaded' : ''}"
 					style="filter: blur({blurAmount}px)"
 					onload={handleImageLoad}

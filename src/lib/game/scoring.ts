@@ -2,8 +2,22 @@
  * Scoring logic for Photo Roulette
  */
 
-import { POINTS_CORRECT_GUESS, POINTS_FASTEST_BONUS, POINTS_FEATURED } from './constants.js';
+import {
+	POINTS_CORRECT_GUESS_BASE,
+	POINTS_CORRECT_GUESS_INCREMENT,
+	POINTS_OWN_PHOTO_PENALTY,
+	POINTS_FASTEST_BONUS,
+	POINTS_FEATURED,
+} from './constants.js';
 import type { Guess, PlayerId, PlayerScore, RoundPlayerScore, RoundResult } from './types.js';
+
+/**
+ * Calculate points for a correct guess based on round number.
+ * Points increase as the game progresses: 63 in round 1, +2 per round.
+ */
+export function getCorrectGuessPoints(roundNumber: number): number {
+	return POINTS_CORRECT_GUESS_BASE + (roundNumber - 1) * POINTS_CORRECT_GUESS_INCREMENT;
+}
 
 /**
  * Find the player ID of the fastest correct guesser
@@ -30,21 +44,27 @@ export function findFastestCorrectGuesser(
 export function calculateRoundScores(
 	playerIds: PlayerId[],
 	guesses: Guess[],
-	photoOwnerId: PlayerId
+	photoOwnerId: PlayerId,
+	roundNumber: number
 ): RoundPlayerScore[] {
 	const fastestGuesserId = findFastestCorrectGuesser(guesses, photoOwnerId);
 	const guessMap = new Map(guesses.map((g) => [g.playerId, g]));
+	const correctGuessPoints = getCorrectGuessPoints(roundNumber);
 
 	return playerIds.map((playerId) => {
 		const guess = guessMap.get(playerId);
 		const correctGuess = guess?.guessedOwnerId === photoOwnerId;
 		const isFastest = playerId === fastestGuesserId;
 		const isFeatured = playerId === photoOwnerId;
+		const isOwnPhotoGuess = correctGuess && playerId === photoOwnerId;
 
 		let points = 0;
 
 		if (correctGuess) {
-			points += POINTS_CORRECT_GUESS;
+			points += correctGuessPoints;
+			if (isOwnPhotoGuess) {
+				points -= POINTS_OWN_PHOTO_PENALTY;
+			}
 		}
 
 		if (isFastest) {

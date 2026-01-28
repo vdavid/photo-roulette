@@ -16,23 +16,7 @@
 	let blobUrl = $state<string | null>(null);
 	let loading = $state(true);
 	let error = $state<Error | null>(null);
-
-	// Track the current src to detect changes
-	let currentSrc = $state(src);
-
-	// Fetch the image when src changes
-	$effect(() => {
-		if (src !== currentSrc) {
-			// Clean up old blob URL
-			if (blobUrl) {
-				revokeBlobUrl(blobUrl);
-			}
-			blobUrl = null;
-			loading = true;
-			error = null;
-			currentSrc = src;
-		}
-	});
+	let previousSrc: string | null = null;
 
 	onMount(async () => {
 		await loadImage();
@@ -40,8 +24,19 @@
 
 	// Reload when src changes
 	$effect(() => {
-		if (src && !blobUrl && !error) {
-			loadImage();
+		if (src !== previousSrc) {
+			// Clean up old blob URL on src change
+			if (blobUrl && previousSrc !== null) {
+				revokeBlobUrl(blobUrl);
+				blobUrl = null;
+				loading = true;
+				error = null;
+			}
+			previousSrc = src;
+
+			if (src && !blobUrl && !error) {
+				loadImage();
+			}
 		}
 	});
 

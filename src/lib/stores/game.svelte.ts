@@ -603,7 +603,16 @@ function createGameStore() {
 
 			photoCount = pickedPhotos.length;
 			hasConnectedPhotos = true;
-			photos = pickedPhotos;
+
+			// Add photos to pool (same logic as peer photo submission)
+			// First remove any existing photos from this player
+			photos = photos.filter((p) => p.ownerId !== myPlayerId);
+			// Then add the new photos
+			for (const photo of pickedPhotos) {
+				if (!photos.find((p) => p.id === photo.id)) {
+					photos.push(photo);
+				}
+			}
 
 			log('info', 'Photos processed', { count: pickedPhotos.length });
 

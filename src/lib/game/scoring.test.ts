@@ -6,8 +6,15 @@ import {
 	getRankedScores,
 	determineWinner,
 	createEmptyPlayerScore,
+	getCorrectGuessPoints,
 } from './scoring.js';
-import { POINTS_CORRECT_GUESS, POINTS_FASTEST_BONUS, POINTS_FEATURED } from './constants.js';
+import {
+	POINTS_CORRECT_GUESS_BASE,
+	POINTS_CORRECT_GUESS_INCREMENT,
+	POINTS_OWN_PHOTO_PENALTY,
+	POINTS_FASTEST_BONUS,
+	POINTS_FEATURED,
+} from './constants.js';
 import type { Guess, RoundResult } from './types.js';
 
 describe('findFastestCorrectGuesser', () => {
@@ -54,9 +61,31 @@ describe('findFastestCorrectGuesser', () => {
 	});
 });
 
+describe('getCorrectGuessPoints', () => {
+	it('returns base points for round 1', () => {
+		expect(getCorrectGuessPoints(1)).toBe(POINTS_CORRECT_GUESS_BASE);
+		expect(getCorrectGuessPoints(1)).toBe(63);
+	});
+
+	it('increases points by increment each round', () => {
+		expect(getCorrectGuessPoints(2)).toBe(65);
+		expect(getCorrectGuessPoints(3)).toBe(67);
+		expect(getCorrectGuessPoints(10)).toBe(81);
+		expect(getCorrectGuessPoints(20)).toBe(101);
+	});
+
+	it('follows formula: base + (roundNumber - 1) * increment', () => {
+		for (let round = 1; round <= 20; round++) {
+			const expected = POINTS_CORRECT_GUESS_BASE + (round - 1) * POINTS_CORRECT_GUESS_INCREMENT;
+			expect(getCorrectGuessPoints(round)).toBe(expected);
+		}
+	});
+});
+
 describe('calculateRoundScores', () => {
 	const playerIds = ['p1', 'p2', 'p3', 'p4'];
 	const photoOwnerId = 'p2';
+	const roundNumber = 1;
 
 	it('awards correct guess points', () => {
 		const guesses: Guess[] = [
@@ -64,7 +93,7 @@ describe('calculateRoundScores', () => {
 			{ playerId: 'p3', guessedOwnerId: 'p2', timestamp: 200 },
 		];
 
-		const scores = calculateRoundScores(playerIds, guesses, photoOwnerId);
+		const scores = calculateRoundScores(playerIds, guesses, photoOwnerId, roundNumber);
 
 		const p1Score = scores.find((s) => s.playerId === 'p1');
 		const p3Score = scores.find((s) => s.playerId === 'p3');
@@ -79,7 +108,7 @@ describe('calculateRoundScores', () => {
 			{ playerId: 'p3', guessedOwnerId: 'p2', timestamp: 100 },
 		];
 
-		const scores = calculateRoundScores(playerIds, guesses, photoOwnerId);
+		const scores = calculateRoundScores(playerIds, guesses, photoOwnerId, roundNumber);
 
 		const p1Score = scores.find((s) => s.playerId === 'p1');
 		const p3Score = scores.find((s) => s.playerId === 'p3');
@@ -91,7 +120,7 @@ describe('calculateRoundScores', () => {
 	it('awards featured points to photo owner', () => {
 		const guesses: Guess[] = [];
 
-		const scores = calculateRoundScores(playerIds, guesses, photoOwnerId);
+		const scores = calculateRoundScores(playerIds, guesses, photoOwnerId, roundNumber);
 
 		const p2Score = scores.find((s) => s.playerId === 'p2');
 		const p1Score = scores.find((s) => s.playerId === 'p1');
@@ -104,28 +133,29 @@ describe('calculateRoundScores', () => {
 	it('calculates correct total points for all scenarios', () => {
 		const guesses: Guess[] = [
 			{ playerId: 'p1', guessedOwnerId: 'p2', timestamp: 100 }, // correct + fastest
-			{ playerId: 'p2', guessedOwnerId: 'p2', timestamp: 150 }, // correct + featured (self-guess)
+			{ playerId: 'p2', guessedOwnerId: 'p2', timestamp: 150 }, // correct + featured (self-guess, with penalty)
 			{ playerId: 'p3', guessedOwnerId: 'p2', timestamp: 200 }, // correct only
 			{ playerId: 'p4', guessedOwnerId: 'wrong', timestamp: 50 }, // wrong guess
 		];
 
-		const scores = calculateRoundScores(playerIds, guesses, photoOwnerId);
+		const scores = calculateRoundScores(playerIds, guesses, photoOwnerId, roundNumber);
+		const correctGuessPoints = getCorrectGuessPoints(roundNumber);
 
 		const p1Score = scores.find((s) => s.playerId === 'p1');
 		const p2Score = scores.find((s) => s.playerId === 'p2');
 		const p3Score = scores.find((s) => s.playerId === 'p3');
 		const p4Score = scores.find((s) => s.playerId === 'p4');
 
-		expect(p1Score?.points).toBe(POINTS_CORRECT_GUESS + POINTS_FASTEST_BONUS);
-		expect(p2Score?.points).toBe(POINTS_CORRECT_GUESS + POINTS_FEATURED);
-		expect(p3Score?.points).toBe(POINTS_CORRECT_GUESS);
+		expect(p1Score?.points).toBe(correctGuessPoints + POINTS_FASTEST_BONUS);
+		expect(p2Score?.points).toBe(correctGuessPoints - POINTS_OWN_PHOTO_PENALTY + POINTS_FEATURED);
+		expect(p3Score?.points).toBe(correctGuessPoints);
 		expect(p4Score?.points).toBe(0);
 	});
 
 	it('handles no guesses submitted', () => {
 		const guesses: Guess[] = [];
 
-		const scores = calculateRoundScores(playerIds, guesses, photoOwnerId);
+		const scores = calculateRoundScores(playerIds, guesses, photoOwnerId, roundNumber);
 
 		const p1Score = scores.find((s) => s.playerId === 'p1');
 		const p2Score = scores.find((s) => s.playerId === 'p2');
@@ -142,27 +172,53 @@ describe('calculateRoundScores', () => {
 			{ playerId: 'p4', guessedOwnerId: 'p3', timestamp: 300 },
 		];
 
-		const scores = calculateRoundScores(playerIds, guesses, photoOwnerId);
+		const scores = calculateRoundScores(playerIds, guesses, photoOwnerId, roundNumber);
 
 		expect(scores.every((s) => !s.isFastest)).toBe(true);
 		expect(scores.filter((s) => !s.isFeatured).every((s) => s.points === 0)).toBe(true);
 		expect(scores.find((s) => s.playerId === 'p2')?.points).toBe(POINTS_FEATURED);
 	});
 
-	it('allows photo owner to guess themselves and win', () => {
+	it('applies own-photo penalty when player guesses their own photo', () => {
 		const guesses: Guess[] = [
 			{ playerId: 'p2', guessedOwnerId: 'p2', timestamp: 100 }, // owner guesses self, fastest
 			{ playerId: 'p1', guessedOwnerId: 'p2', timestamp: 200 },
 		];
 
-		const scores = calculateRoundScores(playerIds, guesses, photoOwnerId);
+		const scores = calculateRoundScores(playerIds, guesses, photoOwnerId, roundNumber);
+		const correctGuessPoints = getCorrectGuessPoints(roundNumber);
 
 		const p2Score = scores.find((s) => s.playerId === 'p2');
+		const p1Score = scores.find((s) => s.playerId === 'p1');
 
 		expect(p2Score?.correctGuess).toBe(true);
 		expect(p2Score?.isFastest).toBe(true);
 		expect(p2Score?.isFeatured).toBe(true);
-		expect(p2Score?.points).toBe(POINTS_CORRECT_GUESS + POINTS_FASTEST_BONUS + POINTS_FEATURED);
+		// Own-photo penalty applied: correctGuess - penalty + fastest + featured
+		expect(p2Score?.points).toBe(
+			correctGuessPoints - POINTS_OWN_PHOTO_PENALTY + POINTS_FASTEST_BONUS + POINTS_FEATURED
+		);
+		// Regular player gets full points
+		expect(p1Score?.points).toBe(correctGuessPoints);
+	});
+
+	it('increases points in later rounds', () => {
+		const guesses: Guess[] = [{ playerId: 'p1', guessedOwnerId: 'p2', timestamp: 100 }];
+
+		const scoresRound1 = calculateRoundScores(playerIds, guesses, photoOwnerId, 1);
+		const scoresRound10 = calculateRoundScores(playerIds, guesses, photoOwnerId, 10);
+		const scoresRound20 = calculateRoundScores(playerIds, guesses, photoOwnerId, 20);
+
+		const p1Round1 = scoresRound1.find((s) => s.playerId === 'p1');
+		const p1Round10 = scoresRound10.find((s) => s.playerId === 'p1');
+		const p1Round20 = scoresRound20.find((s) => s.playerId === 'p1');
+
+		// Round 1: 63 + 28 (fastest) = 91
+		expect(p1Round1?.points).toBe(63 + POINTS_FASTEST_BONUS);
+		// Round 10: 81 + 28 (fastest) = 109
+		expect(p1Round10?.points).toBe(81 + POINTS_FASTEST_BONUS);
+		// Round 20: 101 + 28 (fastest) = 129
+		expect(p1Round20?.points).toBe(101 + POINTS_FASTEST_BONUS);
 	});
 });
 

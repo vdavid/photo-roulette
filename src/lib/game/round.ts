@@ -199,7 +199,12 @@ export function updateGuess(round: Round, guess: Guess): Round {
  * Complete a round and generate results
  */
 export function completeRound(round: Round, playerIds: PlayerId[]): RoundResult {
-	const scores = calculateRoundScores(playerIds, round.guesses, round.photoOwnerId);
+	const scores = calculateRoundScores(
+		playerIds,
+		round.guesses,
+		round.photoOwnerId,
+		round.roundNumber
+	);
 	const fastestCorrectGuesserId = findFastestCorrectGuesser(round.guesses, round.photoOwnerId);
 
 	return {

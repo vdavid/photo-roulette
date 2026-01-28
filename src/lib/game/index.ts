@@ -28,7 +28,9 @@ export type {
 
 // Constants
 export {
-	POINTS_CORRECT_GUESS,
+	POINTS_CORRECT_GUESS_BASE,
+	POINTS_CORRECT_GUESS_INCREMENT,
+	POINTS_OWN_PHOTO_PENALTY,
 	POINTS_FASTEST_BONUS,
 	POINTS_FEATURED,
 	TIMER_OPTIONS,
@@ -46,6 +48,7 @@ export {
 
 // Scoring
 export {
+	getCorrectGuessPoints,
 	findFastestCorrectGuesser,
 	calculateRoundScores,
 	createEmptyPlayerScore,
