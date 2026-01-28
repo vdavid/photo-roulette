@@ -135,13 +135,6 @@ export interface PickedPhoto {
 	height?: number;
 }
 
-/** OAuth configuration */
-export interface OAuthConfig {
-	clientId: string;
-	redirectUri: string;
-	scope: string;
-}
-
 /** Callback functions for picker events */
 export interface PickerCallbacks {
 	onStateChange?: (state: PickerSessionState) => void;

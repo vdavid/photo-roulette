@@ -1,137 +1,139 @@
 /**
  * OAuth 2.0 service for Google Photos authentication
  *
- * Uses Authorization Code Flow with PKCE (recommended for SPAs)
+ * Uses Google Identity Services (GIS) for browser-based OAuth.
+ * This approach doesn't require a backend or client secret.
  */
 
-import type { OAuthConfig, OAuthToken } from './types.js';
+import type { OAuthToken } from './types.js';
 import {
-	OAUTH_AUTH_URL,
-	OAUTH_TOKEN_URL,
 	OAUTH_TOKEN_STORAGE_KEY,
-	OAUTH_STATE_STORAGE_KEY,
 	TOKEN_REFRESH_BUFFER_MS,
 	PICKER_OAUTH_SCOPE,
 } from './constants.js';
 
-/** PKCE code verifier storage key */
-const CODE_VERIFIER_STORAGE_KEY = 'photo-roulette-code-verifier';
-
-/**
- * Generate a cryptographically random string for PKCE
- */
-function generateRandomString(length: number): string {
-	const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-	const randomValues = crypto.getRandomValues(new Uint8Array(length));
-	return Array.from(randomValues, (v) => charset[v % charset.length]).join('');
-}
-
-/**
- * Generate SHA-256 hash and base64url encode it for PKCE challenge
- */
-async function generateCodeChallenge(verifier: string): Promise<string> {
-	const encoder = new TextEncoder();
-	const data = encoder.encode(verifier);
-	const digest = await crypto.subtle.digest('SHA-256', data);
-
-	// Base64url encode (no padding, URL-safe characters)
-	const base64 = btoa(String.fromCharCode(...new Uint8Array(digest)));
-	return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-/**
- * Generate a random state parameter for CSRF protection
- */
-function generateState(): string {
-	return generateRandomString(32);
-}
-
-/**
- * Build the OAuth authorization URL
- */
-export async function buildAuthorizationUrl(config: OAuthConfig): Promise<string> {
-	// Generate PKCE code verifier and challenge
-	const codeVerifier = generateRandomString(64);
-	const codeChallenge = await generateCodeChallenge(codeVerifier);
-
-	// Generate state for CSRF protection
-	const state = generateState();
-
-	// Store verifier and state for later use
-	sessionStorage.setItem(CODE_VERIFIER_STORAGE_KEY, codeVerifier);
-	sessionStorage.setItem(OAUTH_STATE_STORAGE_KEY, state);
-
-	const params = new URLSearchParams({
-		client_id: config.clientId,
-		redirect_uri: config.redirectUri,
-		response_type: 'code',
-		scope: config.scope,
-		state: state,
-		code_challenge: codeChallenge,
-		code_challenge_method: 'S256',
-		access_type: 'offline', // Request refresh token
-		prompt: 'consent', // Always show consent to get refresh token
-	});
-
-	return `${OAUTH_AUTH_URL}?${params.toString()}`;
-}
-
-/**
- * Exchange authorization code for tokens
- */
-export async function exchangeCodeForToken(code: string, config: OAuthConfig): Promise<OAuthToken> {
-	const codeVerifier = sessionStorage.getItem(CODE_VERIFIER_STORAGE_KEY);
-	if (!codeVerifier) {
-		throw new Error('Code verifier not found. Please restart the authorization flow.');
-	}
-
-	const params = new URLSearchParams({
-		client_id: config.clientId,
-		code: code,
-		code_verifier: codeVerifier,
-		grant_type: 'authorization_code',
-		redirect_uri: config.redirectUri,
-	});
-
-	const response = await fetch(OAUTH_TOKEN_URL, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/x-www-form-urlencoded',
-		},
-		body: params.toString(),
-	});
-
-	if (!response.ok) {
-		const errorData = await response.json().catch(() => ({}));
-		throw new Error(
-			`Token exchange failed: ${errorData.error_description || errorData.error || response.statusText}`
-		);
-	}
-
-	const data = await response.json();
-
-	// Clean up verifier
-	sessionStorage.removeItem(CODE_VERIFIER_STORAGE_KEY);
-
-	const token: OAuthToken = {
-		accessToken: data.access_token,
-		expiresAt: Date.now() + data.expires_in * 1000,
-		tokenType: data.token_type,
+/** Google Identity Services types (loaded from external script) */
+declare const google: {
+	accounts: {
+		oauth2: {
+			initTokenClient: (config: TokenClientConfig) => TokenClient;
+			revoke: (token: string, callback?: () => void) => void;
+		};
 	};
+};
 
-	// Store token
-	saveToken(token);
+interface TokenClientConfig {
+	client_id: string;
+	scope: string;
+	callback: (response: TokenResponse) => void;
+	error_callback?: (error: TokenError) => void;
+	prompt?: string;
+}
 
-	return token;
+interface TokenClient {
+	requestAccessToken: (options?: { prompt?: string }) => void;
+}
+
+interface TokenResponse {
+	access_token: string;
+	expires_in: number;
+	token_type: string;
+	scope: string;
+	error?: string;
+	error_description?: string;
+}
+
+interface TokenError {
+	type: string;
+	message?: string;
+}
+
+/** Track if GIS library is loaded */
+let gisLoaded = false;
+
+/**
+ * Wait for Google Identity Services library to load
+ */
+function waitForGis(timeoutMs: number = 10000): Promise<void> {
+	if (gisLoaded) return Promise.resolve();
+
+	return new Promise((resolve, reject) => {
+		const startTime = Date.now();
+
+		const checkGis = () => {
+			if (typeof google !== 'undefined' && google.accounts?.oauth2) {
+				gisLoaded = true;
+				resolve();
+			} else if (Date.now() - startTime > timeoutMs) {
+				reject(new Error('Google Identity Services failed to load. Please refresh the page.'));
+			} else {
+				setTimeout(checkGis, 100);
+			}
+		};
+
+		checkGis();
+	});
 }
 
 /**
- * Validate the OAuth callback state parameter
+ * Request an access token using Google Identity Services
+ *
+ * This opens a popup for the user to sign in and authorize access.
  */
-export function validateState(receivedState: string): boolean {
-	const savedState = sessionStorage.getItem(OAUTH_STATE_STORAGE_KEY);
-	sessionStorage.removeItem(OAUTH_STATE_STORAGE_KEY); // Clean up
-	return savedState === receivedState;
+export async function requestAccessToken(clientId: string): Promise<OAuthToken> {
+	await waitForGis();
+
+	return new Promise((resolve, reject) => {
+		const tokenClient = google.accounts.oauth2.initTokenClient({
+			client_id: clientId,
+			scope: PICKER_OAUTH_SCOPE,
+			callback: (response: TokenResponse) => {
+				if (response.error) {
+					reject(new Error(response.error_description || response.error));
+					return;
+				}
+
+				const token: OAuthToken = {
+					accessToken: response.access_token,
+					expiresAt: Date.now() + response.expires_in * 1000,
+					tokenType: response.token_type,
+				};
+
+				// Store token
+				saveToken(token);
+				resolve(token);
+			},
+			error_callback: (error: TokenError) => {
+				if (error.type === 'popup_closed') {
+					reject(new Error('Sign-in was cancelled. Please try again.'));
+				} else if (error.type === 'popup_failed_to_open') {
+					reject(new Error('Could not open sign-in popup. Please allow popups for this site.'));
+				} else {
+					reject(new Error(error.message || `Authentication error: ${error.type}`));
+				}
+			},
+		});
+
+		// Request the token - this opens the Google sign-in popup
+		tokenClient.requestAccessToken();
+	});
+}
+
+/**
+ * Revoke the current access token
+ */
+export async function revokeToken(): Promise<void> {
+	const token = loadToken();
+	if (!token) return;
+
+	await waitForGis();
+
+	return new Promise((resolve) => {
+		google.accounts.oauth2.revoke(token.accessToken, () => {
+			clearToken();
+			resolve();
+		});
+	});
 }
 
 /**
@@ -196,39 +198,17 @@ export function hasValidToken(): boolean {
 }
 
 /**
- * Create OAuth config with default scope
+ * Get a valid token, requesting a new one if needed
+ *
+ * This is the main entry point for getting an auth token.
+ * If the user is not signed in, this will open the Google sign-in popup.
  */
-export function createOAuthConfig(clientId: string, redirectUri: string): OAuthConfig {
-	return {
-		clientId,
-		redirectUri,
-		scope: PICKER_OAUTH_SCOPE,
-	};
-}
-
-/**
- * Parse OAuth callback URL parameters
- */
-export function parseCallbackParams(
-	url: string
-): { code: string; state: string } | { error: string; errorDescription?: string } {
-	const urlObj = new URL(url);
-	const params = urlObj.searchParams;
-
-	const error = params.get('error');
-	if (error) {
-		return {
-			error,
-			errorDescription: params.get('error_description') || undefined,
-		};
+export async function ensureValidToken(clientId: string): Promise<OAuthToken> {
+	const existingToken = getValidToken();
+	if (existingToken) {
+		return existingToken;
 	}
 
-	const code = params.get('code');
-	const state = params.get('state');
-
-	if (!code || !state) {
-		return { error: 'missing_params', errorDescription: 'Missing code or state parameter' };
-	}
-
-	return { code, state };
+	// Need to request a new token
+	return requestAccessToken(clientId);
 }

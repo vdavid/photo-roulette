@@ -2,7 +2,7 @@
 	import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/public';
 	import { Landing, Lobby, Game, Results, Final } from '$lib/views';
 	import { gameStore } from '$lib/stores/game.svelte.js';
-	import { pickPhotos, buildAuthorizationUrl, getPhotosConfig, hasValidToken } from '$lib/photos';
+	import { pickPhotos, ensureValidToken, openBlankPickerWindow } from '$lib/photos';
 	import { Spinner } from '$lib/components';
 
 	// Set up logging for debugging
@@ -33,25 +33,28 @@
 	}
 
 	async function handleConnectPhotos() {
-		// Check if we have a valid OAuth token
-		if (!hasValidToken()) {
-			// Need to authenticate first - redirect to OAuth
-			const config = getPhotosConfig(PUBLIC_GOOGLE_CLIENT_ID, window.location.origin);
-			const authUrl = await buildAuthorizationUrl(config);
-
-			// Store where to return after auth
-			sessionStorage.setItem('photo-roulette-auth-return', window.location.pathname);
-
-			// Redirect to Google OAuth
-			window.location.href = authUrl;
+		// IMPORTANT: Open the picker window IMMEDIATELY during user gesture
+		// This prevents popup blockers from blocking it after async operations
+		const pickerWindow = openBlankPickerWindow();
+		if (!pickerWindow) {
+			console.error('Popup blocked! Please allow popups for this site.');
 			return;
 		}
 
-		// We have a token, proceed with photo picking
-		await gameStore.connectPhotos(async () => {
-			const result = await pickPhotos(50);
-			return result;
-		});
+		try {
+			// Ensure we have a valid token (opens popup if needed)
+			const token = await ensureValidToken(PUBLIC_GOOGLE_CLIENT_ID);
+
+			// Proceed with photo picking, passing the pre-opened window
+			await gameStore.connectPhotos(async () => {
+				const result = await pickPhotos(50, undefined, token, pickerWindow);
+				return result;
+			});
+		} catch (error) {
+			console.error('Failed to connect photos:', error);
+			// Close the blank window if something went wrong
+			pickerWindow.close();
+		}
 	}
 
 	function handleStartGame() {

@@ -2,32 +2,23 @@
  * Google Photos Picker API integration
  *
  * This module provides everything needed to:
- * 1. Authenticate users with Google OAuth 2.0
+ * 1. Authenticate users with Google OAuth 2.0 (via Google Identity Services)
  * 2. Open the Google Photos Picker for photo selection
  * 3. Retrieve selected photos for use in the game
  *
  * Usage:
  * ```ts
- * import { createOAuthConfig, buildAuthorizationUrl, pickPhotos } from '$lib/photos';
+ * import { ensureValidToken, pickPhotos } from '$lib/photos';
+ * import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/public';
  *
- * // Step 1: Configure OAuth
- * const config = createOAuthConfig(CLIENT_ID, REDIRECT_URI);
+ * // Step 1: Ensure we have a valid token (opens popup if needed)
+ * const token = await ensureValidToken(PUBLIC_GOOGLE_CLIENT_ID);
  *
- * // Step 2: Start auth flow (redirect user)
- * const authUrl = await buildAuthorizationUrl(config);
- * window.location.href = authUrl;
- *
- * // Step 3: Handle callback (in your callback route)
- * const params = parseCallbackParams(window.location.href);
- * if ('code' in params && validateState(params.state)) {
- *   await exchangeCodeForToken(params.code, config);
- * }
- *
- * // Step 4: Pick photos (after auth)
+ * // Step 2: Pick photos
  * const result = await pickPhotos(30, {
  *   onStateChange: (state) => console.log('State:', state),
  *   onProgress: (msg) => console.log(msg),
- * });
+ * }, token);
  *
  * // result.photos contains the selected photos
  * ```
@@ -36,7 +27,6 @@
 // Types
 export type {
 	OAuthToken,
-	OAuthConfig,
 	PollingConfig,
 	PickingConfig,
 	PickingSession,
@@ -56,8 +46,6 @@ export type {
 // Constants
 export {
 	PICKER_API_BASE_URL,
-	OAUTH_AUTH_URL,
-	OAUTH_TOKEN_URL,
 	PICKER_OAUTH_SCOPE,
 	DEFAULT_MAX_PICK_COUNT,
 	MIN_PHOTOS_REQUIRED,
@@ -71,17 +59,15 @@ export {
 
 // OAuth functions
 export {
-	buildAuthorizationUrl,
-	exchangeCodeForToken,
-	validateState,
+	requestAccessToken,
+	revokeToken,
+	ensureValidToken,
 	saveToken,
 	loadToken,
 	clearToken,
 	isTokenValid,
 	getValidToken,
 	hasValidToken,
-	createOAuthConfig,
-	parseCallbackParams,
 } from './oauth.js';
 
 // Picker functions
@@ -92,6 +78,8 @@ export {
 	listMediaItems,
 	fetchAllMediaItems,
 	toPickedPhoto,
+	openBlankPickerWindow,
+	navigatePickerWindow,
 	openPickerWindow,
 	pollSessionUntilComplete,
 	pickPhotos,
@@ -100,4 +88,4 @@ export {
 } from './picker.js';
 
 // Configuration
-export { getPhotosConfig, isPhotosConfigured } from './config.js';
+export { isPhotosConfigured } from './config.js';

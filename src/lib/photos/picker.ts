@@ -215,15 +215,48 @@ export function toPickedPhoto(item: PickedMediaItem): PickedPhoto {
 }
 
 /**
+ * Open a blank window immediately (must be called during user gesture)
+ * Returns the window reference that can be navigated later
+ */
+export function openBlankPickerWindow(): Window | null {
+	return window.open('about:blank', '_blank');
+}
+
+/**
+ * Navigate an existing window to the picker URI
+ */
+export function navigatePickerWindow(pickerWindow: Window, pickerUri: string): void {
+	// Append autoclose suffix for better UX
+	// Must insert before query params, not at the end of the full URL
+	let uri = pickerUri;
+
+	if (!pickerUri.includes(PICKER_AUTOCLOSE_SUFFIX)) {
+		try {
+			const url = new URL(pickerUri);
+			// Insert /autoclose at the end of the pathname
+			if (!url.pathname.endsWith(PICKER_AUTOCLOSE_SUFFIX)) {
+				url.pathname = url.pathname + PICKER_AUTOCLOSE_SUFFIX;
+			}
+			uri = url.toString();
+		} catch {
+			// If URL parsing fails, use original
+			uri = pickerUri;
+		}
+	}
+
+	pickerWindow.location.href = uri;
+}
+
+/**
  * Open the Google Photos picker in a new tab/window
+ * @deprecated Use openBlankPickerWindow + navigatePickerWindow for better popup handling
  */
 export function openPickerWindow(pickerUri: string): Window | null {
-	// Append autoclose suffix for better UX
-	const uri = pickerUri.endsWith(PICKER_AUTOCLOSE_SUFFIX)
-		? pickerUri
-		: pickerUri + PICKER_AUTOCLOSE_SUFFIX;
-
-	return window.open(uri, '_blank', 'noopener');
+	const win = openBlankPickerWindow();
+	if (win) {
+		navigatePickerWindow(win, pickerUri);
+	}
+	return win;
 }
 
 /**
@@ -260,15 +293,18 @@ export async function pollSessionUntilComplete(
  * Complete photo picking flow
  *
  * 1. Creates a session
- * 2. Opens the picker in a new window
+ * 2. Navigates the picker window to the session
  * 3. Polls for completion
  * 4. Fetches selected photos
  * 5. Cleans up the session
+ *
+ * @param pickerWindow - A pre-opened window (call openBlankPickerWindow during user gesture)
  */
 export async function pickPhotos(
 	maxItemCount: number = DEFAULT_MAX_PICK_COUNT,
 	callbacks?: PickerCallbacks,
-	token?: OAuthToken
+	token?: OAuthToken,
+	pickerWindow?: Window | null
 ): Promise<PickerResult> {
 	let sessionId: string | undefined;
 
@@ -281,20 +317,30 @@ export async function pickPhotos(
 		updateState('creating');
 		callbacks?.onProgress?.('Creating photo picker session...');
 
+		console.log('[PhotoPicker] Creating session with token:', token?.accessToken?.slice(0, 20) + '...');
 		const session = await createSession(maxItemCount, token);
 		sessionId = session.id;
+		console.log('[PhotoPicker] Session created:', {
+			id: session.id,
+			pickerUri: session.pickerUri,
+			expireTime: session.expireTime,
+		});
 
-		// Step 2: Open picker window
+		// Step 2: Navigate picker window to session URI
 		updateState('waiting-for-user');
 		callbacks?.onProgress?.('Opening Google Photos...');
 
-		const pickerWindow = openPickerWindow(session.pickerUri);
-		if (!pickerWindow) {
+		// If no pre-opened window, try to open one (may be blocked)
+		const win = pickerWindow || openBlankPickerWindow();
+		if (!win) {
 			throw createPickerError(
 				'unknown',
-				'Could not open Google Photos. Please check if popups are blocked.'
+				'Could not open Google Photos. Please allow popups for this site.'
 			);
 		}
+
+		console.log('[PhotoPicker] Navigating picker window to:', session.pickerUri);
+		navigatePickerWindow(win, session.pickerUri);
 
 		// Step 3: Poll for completion
 		updateState('polling');
