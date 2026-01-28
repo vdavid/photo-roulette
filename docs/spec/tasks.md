@@ -39,32 +39,32 @@ All game logic should be pure TypeScript functions, tested independently of UI.
 
 ### 2.1 Types and constants
 
-- [ ] Define TypeScript types: `Player`, `Photo`, `Round`, `GameState`, `Guess`, etc.
-- [ ] Create constants file: timers, scoring values, limits, emoji list
+- [x] Define TypeScript types: `Player`, `Photo`, `Round`, `GameState`, `Guess`, etc.
+- [x] Create constants file: timers, scoring values, limits, emoji list
 
 ### 2.2 Scoring logic
 
-- [ ] Implement `calculateRoundScore()` — correct guess, fastest bonus, featured bonus
-- [ ] Implement `calculateFinalScores()` — aggregate all rounds
-- [ ] **Tests**: all scoring scenarios, edge cases (no guess, self-guess, ties)
+- [x] Implement `calculateRoundScore()` — correct guess, fastest bonus, featured bonus
+- [x] Implement `calculateFinalScores()` — aggregate all rounds
+- [x] **Tests**: all scoring scenarios, edge cases (no guess, self-guess, ties)
 
 ### 2.3 Round management
 
-- [ ] Implement `selectRandomPhoto()` — pick from pool, track used photos
-- [ ] Implement `advanceRound()` — progress game state
-- [ ] Implement `determineWinner()` — find fastest correct guess
-- [ ] **Tests**: photo selection, round progression, repeat handling
+- [x] Implement `selectRandomPhoto()` — pick from pool, track used photos
+- [x] Implement `advanceRound()` — progress game state
+- [x] Implement `determineWinner()` — find fastest correct guess
+- [x] **Tests**: photo selection, round progression, repeat handling
 
 ### 2.4 Game flow state machine
 
-- [ ] Define game phases: `landing` → `lobby` → `playing` → `results` → `final`
-- [ ] Implement state transitions
-- [ ] **Tests**: all valid transitions, invalid transition handling
+- [x] Define game phases: `landing` → `lobby` → `playing` → `results` → `final`
+- [x] Implement state transitions
+- [x] **Tests**: all valid transitions, invalid transition handling
 
 ### 2.5 Superlatives calculation
 
-- [ ] Implement end-game stats: fastest fingers, most featured, accuracy, etc.
-- [ ] **Tests**: superlative calculations with various game scenarios
+- [x] Implement end-game stats: fastest fingers, most featured, accuracy, etc.
+- [x] **Tests**: superlative calculations with various game scenarios
 
 ---
 
