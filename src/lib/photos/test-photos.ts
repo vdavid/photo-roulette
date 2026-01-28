@@ -84,12 +84,14 @@ function generateTestImage(
 	ctx.fillStyle = colors.bg;
 	ctx.fillRect(0, 0, width, height);
 
-	// Add subtle pattern for visual interest
+	// Add subtle pattern for visual interest (deterministic based on photo number)
 	ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
 	for (let i = 0; i < 20; i++) {
-		const x = Math.random() * width;
-		const y = Math.random() * height;
-		const size = 20 + Math.random() * 60;
+		// Use deterministic positions based on photo number and index
+		const seed = photoNumber * 20 + i;
+		const x = ((seed * 7919) % width); // Prime-based pseudo-random
+		const y = ((seed * 6271) % height);
+		const size = 20 + ((seed * 3571) % 60);
 		ctx.beginPath();
 		ctx.arc(x, y, size, 0, Math.PI * 2);
 		ctx.fill();

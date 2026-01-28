@@ -4,6 +4,7 @@
 
 import type { Photo, PhotoPool, Round, RoundResult, PlayerId, Guess } from './types.js';
 import { calculateRoundScores, findFastestCorrectGuesser } from './scoring.js';
+import { random } from './random.js';
 
 /**
  * Create an initial photo pool from all players' photos
@@ -37,7 +38,7 @@ export function selectRandomPhoto(pool: PhotoPool): {
 	}
 
 	// Select random photo
-	const randomIndex = Math.floor(Math.random() * available.length);
+	const randomIndex = Math.floor(random() * available.length);
 	const photo = available[randomIndex];
 
 	// Remove from available, add to used
@@ -104,11 +105,11 @@ export function selectFairPhoto(
 	}
 
 	// Pick a random eligible owner
-	const selectedOwner = eligibleOwners[Math.floor(Math.random() * eligibleOwners.length)];
+	const selectedOwner = eligibleOwners[Math.floor(random() * eligibleOwners.length)];
 	const ownerPhotos = photosByOwner.get(selectedOwner)!;
 
 	// Pick a random photo from that owner
-	const photo = ownerPhotos[Math.floor(Math.random() * ownerPhotos.length)];
+	const photo = ownerPhotos[Math.floor(random() * ownerPhotos.length)];
 
 	// Remove from available, add to used
 	const photoIndex = available.findIndex((p) => p.id === photo.id);
@@ -130,7 +131,7 @@ export function selectFairPhoto(
 export function shuffleArray<T>(array: T[]): T[] {
 	const result = [...array];
 	for (let i = result.length - 1; i > 0; i--) {
-		const j = Math.floor(Math.random() * (i + 1));
+		const j = Math.floor(random() * (i + 1));
 		[result[i], result[j]] = [result[j], result[i]];
 	}
 	return result;

@@ -53,6 +53,7 @@ import {
 } from '$lib/photos/index.js';
 import { getRankedScores, determineWinner, createEmptyPlayerScore } from '$lib/game/scoring.js';
 import { calculateSuperlatives } from '$lib/game/superlatives.js';
+import { setRandomSeed } from '$lib/game/random.js';
 
 /** Log levels */
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -569,6 +570,15 @@ function createGameStore() {
 		}
 
 		log('info', 'Starting game');
+
+		// Check for test seed (injected by E2E tests for deterministic behavior)
+		if (typeof window !== 'undefined') {
+			const testSeed = (window as unknown as { __TEST_RANDOM_SEED__?: number }).__TEST_RANDOM_SEED__;
+			if (testSeed !== undefined) {
+				log('info', 'Using test random seed', { seed: testSeed });
+				setRandomSeed(testSeed);
+			}
+		}
 
 		// Create photo pool from all players' photos
 		internalState.photoPool = createPhotoPool(photos);
