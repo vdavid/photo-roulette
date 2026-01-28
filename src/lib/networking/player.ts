@@ -53,7 +53,7 @@ export interface PlayerNetworkEvents {
 	/** Player list updated */
 	playerUpdate: (
 		playerId: PlayerId,
-		updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady' | 'isSpectator'>>
+		updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady' | 'isSpectator' | 'photoIds'>>
 	) => void;
 	/** Player left the game */
 	playerLeft: (playerId: PlayerId) => void;
@@ -143,6 +143,43 @@ export class PlayerNetwork {
 				playerEmoji,
 			};
 			this.peerManager.send(this.hostConnection.peer, joinRequest);
+		} catch (error) {
+			this.peerManager.destroy();
+			throw error;
+		}
+	}
+
+	/**
+	 * Rejoin a game room after a page refresh (using stored player ID)
+	 */
+	async rejoinRoom(
+		roomCode: string,
+		playerId: PlayerId,
+		_playerName: string,
+		_playerEmoji: string
+	): Promise<void> {
+		const normalizedCode = normalizeRoomCode(roomCode);
+		if (!isValidRoomCode(normalizedCode)) {
+			throw new Error('Invalid room code format');
+		}
+
+		this.roomCode = normalizedCode;
+		this.myPlayerId = playerId;
+
+		// Initialize our peer
+		await this.peerManager.initAsPlayer();
+
+		// Connect to host
+		try {
+			this.hostConnection = await this.peerManager.connectToHost(normalizedCode);
+
+			// Send reconnect message with existing player ID
+			const reconnectMessage: PlayerReconnectedMessage = {
+				...createBaseMessage('player-reconnected', playerId),
+				type: 'player-reconnected',
+				playerId,
+			};
+			this.peerManager.send(this.hostConnection.peer, reconnectMessage);
 		} catch (error) {
 			this.peerManager.destroy();
 			throw error;

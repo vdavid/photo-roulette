@@ -25,6 +25,19 @@
 		await gameStore.joinGame(code, name, emoji);
 	}
 
+	// Check for persisted session on load
+	const persistedSession = gameStore.getPersistedSession();
+
+	async function handleRestoreSession(
+		session: NonNullable<ReturnType<typeof gameStore.getPersistedSession>>
+	) {
+		return await gameStore.restoreAsPlayer(session);
+	}
+
+	function handleDismissSession() {
+		gameStore.clearPersistedSession();
+	}
+
 	function handleUpdateName(name: string, emoji: string) {
 		gameStore.updateMyInfo(name, emoji);
 	}
@@ -121,7 +134,13 @@
 		<p>Connecting...</p>
 	</div>
 {:else if gameStore.phase === 'landing'}
-	<Landing onHostGame={handleHostGame} onJoinGame={handleJoinGame} />
+	<Landing
+		onHostGame={handleHostGame}
+		onJoinGame={handleJoinGame}
+		{persistedSession}
+		onRestoreSession={handleRestoreSession}
+		onDismissSession={handleDismissSession}
+	/>
 {:else if gameStore.phase === 'lobby'}
 	<Lobby
 		roomCode={gameStore.roomCode || ''}

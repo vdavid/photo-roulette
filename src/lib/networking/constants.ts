@@ -18,8 +18,11 @@ export const CONNECTION_TIMEOUT_MS = 15000;
 /** Interval between ping messages for connection health (ms) */
 export const PING_INTERVAL_MS = 5000;
 
-/** Time without pong before considering connection dead (ms) */
+/** Time without pong before considering a ping missed (ms) */
 export const PING_TIMEOUT_MS = 10000;
+
+/** Number of consecutive missed pings before disconnecting */
+export const MAX_MISSED_PINGS = 3;
 
 /** Time to wait before attempting reconnection (ms) */
 export const RECONNECT_DELAY_MS = 1000;

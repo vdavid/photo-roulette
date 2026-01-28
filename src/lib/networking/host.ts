@@ -19,6 +19,7 @@ import type {
 	PlayerJoinAcceptedMessage,
 	PlayerJoinRejectedMessage,
 	PlayerLeftMessage,
+	PlayerReconnectedMessage,
 	PlayerUpdateMessage,
 	PhotosSubmittedMessage,
 	SettingsChangedMessage,
@@ -52,7 +53,7 @@ export interface HostNetworkEvents {
 	/** Player updated their info */
 	playerUpdate: (
 		playerId: PlayerId,
-		updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady' | 'isSpectator'>>
+		updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady' | 'isSpectator' | 'photoIds'>>
 	) => void;
 	/** Player submitted photos */
 	photosSubmitted: (playerId: PlayerId, photos: Photo[]) => void;
@@ -153,7 +154,7 @@ export class HostNetwork {
 	 */
 	broadcastPlayerUpdate(
 		playerId: PlayerId,
-		updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady' | 'isSpectator'>>
+		updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady' | 'isSpectator' | 'photoIds'>>
 	): void {
 		const message: PlayerUpdateMessage = {
 			...createBaseMessage('player-update', this.hostPlayerId),
@@ -337,9 +338,20 @@ export class HostNetwork {
 				this.handleGuessSubmitted(message as GuessSubmittedMessage);
 				break;
 
+			case 'player-reconnected':
+				this.handlePlayerReconnected(peerId, message as PlayerReconnectedMessage);
+				break;
+
 			default:
 				console.warn(`Host received unexpected message type: ${message.type}`);
 		}
+	}
+
+	private handlePlayerReconnected(peerId: string, message: PlayerReconnectedMessage): void {
+		const playerId = message.playerId;
+		// Associate the new peer connection with the existing player
+		this.peerManager.setPlayerIdForPeer(peerId, playerId);
+		this.emit('playerReconnected', playerId);
 	}
 
 	private handleJoinRequest(peerId: string, message: PlayerJoinRequestMessage): void {

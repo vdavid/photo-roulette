@@ -2,6 +2,7 @@
 	import { browser } from '$app/environment';
 	import { Button, Card, Input, EmojiPicker } from '$lib/components';
 	import { ANIMAL_EMOJIS } from '$lib/game/constants.js';
+	import type { PersistedSession } from '$lib/stores/persistence.js';
 
 	const STORAGE_KEY_NAME = 'photoRoulette.playerName';
 	const STORAGE_KEY_EMOJI = 'photoRoulette.playerEmoji';
@@ -9,9 +10,13 @@
 	interface Props {
 		onHostGame: (_name: string, _emoji: string) => Promise<void>;
 		onJoinGame: (_code: string, _name: string, _emoji: string) => Promise<void>;
+		persistedSession?: PersistedSession | null;
+		onRestoreSession?: (_session: PersistedSession) => Promise<boolean>;
+		onDismissSession?: () => void;
 	}
 
-	let { onHostGame, onJoinGame }: Props = $props();
+	let { onHostGame, onJoinGame, persistedSession, onRestoreSession, onDismissSession }: Props =
+		$props();
 
 	// Load saved values from localStorage, or use defaults
 	function getInitialName(): string {
@@ -43,7 +48,35 @@
 	let emoji = $state(getInitialEmoji());
 	let roomCode = $state('');
 	let isLoading = $state(false);
+	let isRestoring = $state(false);
 	let error = $state('');
+	let sessionDismissed = $state(false);
+	const showSessionBanner = $derived(!!persistedSession && !sessionDismissed);
+
+	async function handleRestoreSession() {
+		if (!persistedSession || !onRestoreSession) return;
+
+		isRestoring = true;
+		error = '';
+
+		try {
+			const success = await onRestoreSession(persistedSession);
+			if (!success) {
+				error = 'Failed to reconnect. The game may have ended.';
+				sessionDismissed = true;
+			}
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Failed to reconnect';
+			sessionDismissed = true;
+		} finally {
+			isRestoring = false;
+		}
+	}
+
+	function handleDismissSession() {
+		sessionDismissed = true;
+		onDismissSession?.();
+	}
 
 	async function handleHost() {
 		if (!name.trim()) {
@@ -93,6 +126,24 @@
 </script>
 
 <div class="landing">
+	{#if showSessionBanner && persistedSession}
+		<div class="session-banner">
+			<div class="session-info">
+				<strong>Reconnect to your game?</strong>
+				<p>
+					Room <code>{persistedSession.roomCode}</code> as {persistedSession.myName}
+					{persistedSession.myEmoji}
+				</p>
+			</div>
+			<div class="session-actions">
+				<Button size="sm" onclick={handleRestoreSession} loading={isRestoring}>Reconnect</Button>
+				<Button size="sm" variant="ghost" onclick={handleDismissSession} disabled={isRestoring}>
+					Start fresh
+				</Button>
+			</div>
+		</div>
+	{/if}
+
 	<div class="logo">
 		<svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 135.5 135.5"
 			><path
@@ -201,6 +252,50 @@
 		justify-content: center;
 		padding: var(--space-lg);
 		gap: var(--space-xl);
+	}
+
+	.session-banner {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		background-color: var(--color-secondary);
+		padding: var(--space-md) var(--space-lg);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-md);
+		flex-wrap: wrap;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		z-index: 100;
+	}
+
+	.session-info {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
+	}
+
+	.session-info strong {
+		color: var(--color-text);
+	}
+
+	.session-info p {
+		margin: 0;
+		color: var(--color-text);
+		font-size: var(--font-size-sm);
+	}
+
+	.session-info code {
+		background-color: rgba(0, 0, 0, 0.1);
+		padding: 2px 6px;
+		border-radius: 4px;
+		font-weight: 600;
+	}
+
+	.session-actions {
+		display: flex;
+		gap: var(--space-sm);
 	}
 
 	.logo {

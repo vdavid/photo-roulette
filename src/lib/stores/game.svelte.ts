@@ -26,6 +26,7 @@ import {
 	ROUND_RESULT_DISPLAY_MS,
 	ROUND_SYNC_BUFFER_MS,
 	ANIMAL_EMOJIS,
+	MIN_PHOTOS_PER_PLAYER,
 } from '$lib/game/constants.js';
 import {
 	createInitialState,
@@ -54,6 +55,7 @@ import {
 import { getRankedScores, determineWinner, createEmptyPlayerScore } from '$lib/game/scoring.js';
 import { calculateSuperlatives } from '$lib/game/superlatives.js';
 import { setRandomSeed } from '$lib/game/random.js';
+import { saveSession, loadSession, clearSession, type PersistedSession } from './persistence.js';
 
 /**
  * Get the round result display duration.
@@ -184,6 +186,74 @@ function createGameStore() {
 		playerScores = new Map(internalState.playerScores);
 	}
 
+	// Persist session state to sessionStorage for recovery after refresh
+	function persistSession() {
+		if (!myPlayerId || !roomCode) return;
+
+		saveSession({
+			isHost,
+			roomCode,
+			myPlayerId,
+			myName,
+			myEmoji,
+			phase,
+			settings,
+			players,
+			hasConnectedPhotos,
+			photoCount,
+		});
+	}
+
+	// Check for and return any persisted session
+	function getPersistedSession(): PersistedSession | null {
+		return loadSession();
+	}
+
+	// Restore state from a persisted session (for UI to decide whether to offer reconnect)
+	async function restoreAsPlayer(session: PersistedSession): Promise<boolean> {
+		if (session.isHost) {
+			log('warn', 'Cannot restore host session as player');
+			return false;
+		}
+
+		log('info', 'Attempting to restore player session', { roomCode: session.roomCode });
+
+		// Restore basic state
+		isHost = false;
+		myName = session.myName;
+		myEmoji = session.myEmoji;
+		roomCode = session.roomCode;
+		myPlayerId = session.myPlayerId;
+		hasConnectedPhotos = session.hasConnectedPhotos;
+		photoCount = session.photoCount;
+		connectionStatus = 'connecting';
+
+		// Try to reconnect
+		playerNetwork = new PlayerNetwork();
+		setupPlayerEvents();
+
+		try {
+			await playerNetwork.rejoinRoom(
+				session.roomCode,
+				session.myPlayerId,
+				session.myName,
+				session.myEmoji
+			);
+			return true;
+		} catch (error) {
+			log('error', 'Failed to restore session', { error });
+			connectionStatus = 'error';
+			connectionError = 'Failed to reconnect. The game may have ended.';
+			clearSession();
+			return false;
+		}
+	}
+
+	// Clear persisted session (called when intentionally leaving)
+	function clearPersistedSession() {
+		clearSession();
+	}
+
 	// === Host Functions ===
 
 	async function hostGame(name: string, emoji: string): Promise<string> {
@@ -222,6 +292,7 @@ function createGameStore() {
 			roomCode = code;
 			connectionStatus = 'connected';
 			syncState();
+			persistSession();
 			log('info', 'Room created', { roomCode: code });
 			return code;
 		} catch (error) {
@@ -291,9 +362,6 @@ function createGameStore() {
 
 			// Update player's photo IDs
 			const photoIds = submittedPhotos.map((p) => p.id);
-			internalState = updatePlayer(internalState, playerId, {
-				isReady: photoIds.length >= 15,
-			});
 
 			// Store photos in pool
 			for (const photo of submittedPhotos) {
@@ -302,13 +370,18 @@ function createGameStore() {
 				}
 			}
 
-			// Update player's photoIds in state
+			// Update player's photoIds and ready state in internal state
 			const player = internalState.players.find((p) => p.id === playerId);
 			if (player) {
 				player.photoIds = photoIds;
+				player.isReady = photoIds.length >= MIN_PHOTOS_PER_PLAYER;
 			}
 
-			hostNetwork!.broadcastPlayerUpdate(playerId, { isReady: photoIds.length >= 15 });
+			// Broadcast both photoIds and isReady so all clients get updated
+			hostNetwork!.broadcastPlayerUpdate(playerId, {
+				photoIds,
+				isReady: photoIds.length >= MIN_PHOTOS_PER_PLAYER,
+			});
 			syncState();
 		});
 
@@ -332,6 +405,17 @@ function createGameStore() {
 			const player = internalState.players.find((p) => p.id === playerId);
 			if (player) {
 				player.isConnected = false;
+				syncState();
+			}
+		});
+
+		hostNetwork.on('playerReconnected', (playerId) => {
+			log('info', 'Player reconnected', { playerId });
+			const player = internalState.players.find((p) => p.id === playerId);
+			if (player) {
+				player.isConnected = true;
+				// Send full state sync to reconnected player
+				hostNetwork!.sendStateSync(playerId, internalState);
 				syncState();
 			}
 		});
@@ -375,6 +459,7 @@ function createGameStore() {
 			phase = gamePhase;
 			settings = gameSettings;
 			players = playerList;
+			persistSession();
 		});
 
 		playerNetwork.on('joinRejected', (reason) => {
@@ -472,11 +557,15 @@ function createGameStore() {
 		});
 
 		playerNetwork.on('stateSync', (state) => {
-			log('debug', 'State sync received');
+			log('info', 'State sync received', { phase: state.phase });
 			if (state.phase) phase = state.phase;
 			if (state.settings) settings = state.settings;
 			if (state.players) players = state.players;
 			if (state.playerScores) playerScores = state.playerScores;
+			// State sync means we're connected (used after reconnection)
+			if (connectionStatus === 'connecting') {
+				connectionStatus = 'connected';
+			}
 		});
 
 		playerNetwork.on('disconnected', () => {
@@ -540,7 +629,7 @@ function createGameStore() {
 				player.isReady =
 					player.name.trim().length > 0 &&
 					player.isConnected &&
-					(spectator || player.photoIds.length >= 15);
+					(spectator || player.photoIds.length >= MIN_PHOTOS_PER_PLAYER);
 			}
 			hostNetwork?.broadcastPlayerUpdate(myPlayerId, { isSpectator: spectator });
 			syncState();
@@ -621,12 +710,14 @@ function createGameStore() {
 				const player = internalState.players.find((p) => p.id === myPlayerId);
 				if (player) {
 					player.photoIds = pickedPhotos.map((p) => p.id);
-					player.isReady = pickedPhotos.length >= 15;
+					player.isReady = pickedPhotos.length >= MIN_PHOTOS_PER_PLAYER;
 				}
 				syncState();
+				persistSession();
 			} else if (playerNetwork && myPlayerId) {
 				// Send to host (with imageData included)
 				playerNetwork.sendPhotos(pickedPhotos);
+				persistSession();
 			}
 		} catch (error) {
 			photoError = error instanceof Error ? error.message : 'Failed to connect photos';
@@ -973,6 +1064,9 @@ function createGameStore() {
 	function leaveGame() {
 		log('info', 'Leaving game');
 
+		// Clear persisted session when intentionally leaving
+		clearSession();
+
 		if (roundTimer) clearTimeout(roundTimer);
 		if (resultsTimer) clearTimeout(resultsTimer);
 		if (roundStartSyncTimer) clearTimeout(roundStartSyncTimer);
@@ -1103,7 +1197,9 @@ function createGameStore() {
 		// Derived - use reactive `players` state, not `internalState.players`
 		get canStartGame() {
 			// Need at least 2 non-spectator players with photos
-			const playersWithPhotos = players.filter((p) => !p.isSpectator && p.photoIds.length >= 15);
+			const playersWithPhotos = players.filter(
+				(p) => !p.isSpectator && p.photoIds.length >= MIN_PHOTOS_PER_PLAYER
+			);
 			// Inline allPlayersReady check using reactive players
 			const allReady =
 				players.length > 0 &&
@@ -1111,12 +1207,15 @@ function createGameStore() {
 					if (p.isSpectator) {
 						return p.name.trim().length > 0 && p.isConnected;
 					}
-					return p.name.trim().length > 0 && p.photoIds.length >= 15 && p.isConnected;
+					return (
+						p.name.trim().length > 0 && p.photoIds.length >= MIN_PHOTOS_PER_PLAYER && p.isConnected
+					);
 				});
 			return isHost && playersWithPhotos.length >= 2 && allReady;
 		},
 		get playersWithPhotosCount() {
-			return players.filter((p) => !p.isSpectator && p.photoIds.length >= 15).length;
+			return players.filter((p) => !p.isSpectator && p.photoIds.length >= MIN_PHOTOS_PER_PLAYER)
+				.length;
 		},
 		get myPlayer() {
 			return players.find((p) => p.id === myPlayerId) || null;
@@ -1134,6 +1233,12 @@ function createGameStore() {
 		rematch,
 		newGame,
 		leaveGame,
+
+		// Session persistence
+		getPersistedSession,
+		restoreAsPlayer,
+		clearPersistedSession,
+
 		kickPlayer: (playerId: PlayerId) => {
 			if (!isHost) return;
 			log('info', 'Kicking player', { playerId });

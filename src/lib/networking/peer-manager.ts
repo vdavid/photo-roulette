@@ -10,6 +10,7 @@ import {
 	CONNECTION_TIMEOUT_MS,
 	PING_INTERVAL_MS,
 	PING_TIMEOUT_MS,
+	MAX_MISSED_PINGS,
 } from './constants.js';
 import { roomCodeToPeerId } from './room-code.js';
 
@@ -40,6 +41,7 @@ export class PeerManager {
 	private peerStates: Map<string, PeerConnection> = new Map();
 	private pingIntervals: Map<string, ReturnType<typeof setInterval>> = new Map();
 	private reconnectAttempts: Map<string, number> = new Map();
+	private missedPings: Map<string, number> = new Map();
 	private eventListeners: Map<
 		keyof PeerManagerEvents,
 		Set<EventCallback<keyof PeerManagerEvents>>
@@ -175,6 +177,7 @@ export class PeerManager {
 		this.connections.clear();
 		this.peerStates.clear();
 		this.reconnectAttempts.clear();
+		this.missedPings.clear();
 
 		// Destroy peer
 		if (this.peer) {
@@ -300,6 +303,9 @@ export class PeerManager {
 			this.pingIntervals.delete(peerId);
 		}
 
+		// Clean up missed pings counter
+		this.missedPings.delete(peerId);
+
 		// Update state
 		this.updatePeerState(peerId, 'disconnected');
 		this.connections.delete(peerId);
@@ -324,6 +330,8 @@ export class PeerManager {
 				state.latency = Date.now() - message.timestamp;
 				state.lastPingTime = Date.now();
 			}
+			// Reset missed pings counter on successful pong
+			this.missedPings.set(peerId, 0);
 			return;
 		}
 
@@ -332,15 +340,25 @@ export class PeerManager {
 	}
 
 	private startPingInterval(peerId: string): void {
+		// Initialize missed pings counter
+		this.missedPings.set(peerId, 0);
+
 		const interval = setInterval(() => {
 			const state = this.peerStates.get(peerId);
 			if (!state) return;
 
-			// Check if connection timed out
+			// Check if last ping was acknowledged
 			if (state.lastPingTime && Date.now() - state.lastPingTime > PING_TIMEOUT_MS) {
-				console.warn(`Connection to ${peerId} timed out`);
-				this.handleConnectionClose(peerId);
-				return;
+				const missed = (this.missedPings.get(peerId) || 0) + 1;
+				this.missedPings.set(peerId, missed);
+				console.warn(`Missed ping ${missed}/${MAX_MISSED_PINGS} for ${peerId}`);
+
+				// Only disconnect after MAX_MISSED_PINGS consecutive misses
+				if (missed >= MAX_MISSED_PINGS) {
+					console.warn(`Connection to ${peerId} timed out after ${missed} missed pings`);
+					this.handleConnectionClose(peerId);
+					return;
+				}
 			}
 
 			// Send ping
