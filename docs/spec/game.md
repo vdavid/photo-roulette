@@ -11,6 +11,7 @@ Named after Bunny, the friend group playing it.
 ### 1. Landing
 
 Two options:
+
 - **Host a game** — create a new room, become the host
 - **Join a game** — enter a room code, join as player
 
@@ -19,6 +20,7 @@ Two options:
 Host and players gather here before the game starts.
 
 **What players see:**
+
 - Room code (e.g., `X7K2`) + copy button — one tap to copy, paste in chat
 - Game settings shown as compact chips: "12 rounds • 10 sec"
 - List of all players with status:
@@ -29,11 +31,13 @@ Host and players gather here before the game starts.
 - Host sees "Start game" button (enabled when everyone's ready)
 
 **Player names:**
+
 - Free text input + emoji picker
 - Curated animal emoji set (~20): 🐰🐇🦊🐻🦉🦌🐿️🦝🐺🦎🐢🦋🐝🦔🐧🦜🐙🦀🐬🦭
 - Pick an emoji to make yourself recognizable in the UI
 
 **Ready conditions:**
+
 - Player has entered their name
 - Player has connected photos (minimum 15)
 
@@ -56,6 +60,7 @@ Host and players gather here before the game starts.
 ```
 
 **Mechanics:**
+
 - Photo shown to all players simultaneously
 - **Progressive reveal**: photo starts blurry, sharpens over 3 seconds, then stays clear
 - **Circular progress ring** around photo depletes as timer runs (10 sec default)
@@ -128,24 +133,25 @@ Winner gets 👑 crown icon next to their name.
 
 ## Scoring
 
-| Action | Points |
-|--------|--------|
-| Correct guess | +100 |
+| Action                | Points    |
+| --------------------- | --------- |
+| Correct guess         | +100      |
 | Fastest correct guess | +50 bonus |
-| Your photo was shown | +50 |
-| Wrong guess | 0 |
+| Your photo was shown  | +50       |
+| Wrong guess           | 0         |
 
 ## Game settings (host configures in lobby)
 
-| Setting | Default | Options |
-|---------|---------|---------|
-| Rounds | 12 | 8, 12, 16, 20 |
-| Timer per round | 10 sec | 5, 10, 15, 20 sec |
-| Min photos per player | 15 | — |
+| Setting               | Default | Options           |
+| --------------------- | ------- | ----------------- |
+| Rounds                | 12      | 8, 12, 16, 20     |
+| Timer per round       | 10 sec  | 5, 10, 15, 20 sec |
+| Min photos per player | 15      | —                 |
 
 ## Audio
 
 **Subtle feedback sounds** (mutable):
+
 - Soft tick when selecting a player
 - Gentle chime on round end
 - Soft whoosh on photo reveal
@@ -161,6 +167,7 @@ No loud buzzers or jarring sounds — you're already on Zoom.
 - No cropping, no face detection — keep it simple
 
 **Loading state**:
+
 - CSS-only spinner while photo loads
 - Show actual progress if technically feasible (bytes loaded / total)
 - Fallback: just the spinner if progress isn't available
@@ -175,16 +182,16 @@ No loud buzzers or jarring sounds — you're already on Zoom.
 
 ### Colors (autumn palette)
 
-| Role | Hex | Name |
-|------|-----|------|
-| Primary | `#C85A35` | burnt sienna |
-| Secondary | `#E8A54B` | goldenrod |
-| Background | `#FDF6EE` | cream |
-| Surface | `#FFFFFF` | white |
-| Text | `#2D2926` | espresso |
-| Text muted | `#7A6F69` | driftwood |
-| Success | `#5B8C5A` | forest |
-| Error | `#B54A4A` | cranberry |
+| Role       | Hex       | Name         |
+| ---------- | --------- | ------------ |
+| Primary    | `#C85A35` | burnt sienna |
+| Secondary  | `#E8A54B` | goldenrod    |
+| Background | `#FDF6EE` | cream        |
+| Surface    | `#FFFFFF` | white        |
+| Text       | `#2D2926` | espresso     |
+| Text muted | `#7A6F69` | driftwood    |
+| Success    | `#5B8C5A` | forest       |
+| Error      | `#B54A4A` | cranberry    |
 
 ### Design principles
 

@@ -18,15 +18,15 @@ Host (you) ←── WebRTC DataChannel ──→ 7 friends
 
 ## Tech stack
 
-| Layer | Choice |
-|-------|--------|
-| Frontend | Svelte 5 + TypeScript |
-| Language | TypeScript (strict mode) |
-| P2P | PeerJS |
-| Signaling | PeerJS Cloud (free) |
-| Photos | Google Photos Picker API |
-| Backend | None (Go server optional as fallback) |
-| Hosting | Static files anywhere |
+| Layer     | Choice                                |
+| --------- | ------------------------------------- |
+| Frontend  | Svelte 5 + TypeScript                 |
+| Language  | TypeScript (strict mode)              |
+| P2P       | PeerJS                                |
+| Signaling | PeerJS Cloud (free)                   |
+| Photos    | Google Photos Picker API              |
+| Backend   | None (Go server optional as fallback) |
+| Hosting   | Static files anywhere                 |
 
 **TypeScript everywhere**: all `.svelte` files use `<script lang="ts">`, all game logic in `.ts` files. Strict mode enabled, no `any` types unless absolutely necessary.
 
@@ -35,6 +35,7 @@ Host (you) ←── WebRTC DataChannel ──→ 7 friends
 **API**: Picker API (not Library API — that's restricted since April 2025)
 
 **Flow**:
+
 1. Player clicks "connect photos"
 2. Opens Google Photos in new tab via `pickerUri`
 3. Player selects 20-30 photos manually
@@ -42,6 +43,7 @@ Host (you) ←── WebRTC DataChannel ──→ 7 friends
 5. URLs sent to host, photos fetched directly from Google CDN when shown
 
 **Constraints**:
+
 - No iframe (security restriction)
 - Use `/autoclose` suffix for better UX
 - Refresh session if game exceeds 60 min
@@ -50,17 +52,20 @@ Host (you) ←── WebRTC DataChannel ──→ 7 friends
 ## P2P with PeerJS
 
 **Connection model**:
+
 - Host creates room → gets peer ID (used as room code)
 - Friends join by entering room code
 - Each friend connects only to host (7 connections total)
 - All game state lives on host, broadcast to players
 
 **Data transferred**:
+
 - Photo URLs (not bytes) — tiny payloads
 - Player names, scores, guesses
 - Game state updates (current phase, timer, results)
 
 **Reliability**:
+
 - Handle disconnects gracefully
 - Host can kick/reconnect players
 - If host dies, game dies (acceptable for friend group)
@@ -77,11 +82,13 @@ Host (you) ←── WebRTC DataChannel ──→ 7 friends
 **Multiple connections from same Google account**: The same person may join from multiple devices (e.g., laptop + phone) to test the game solo. Each connection is treated as a separate player — they just happen to share the same photo pool. No special handling needed, but don't break if photo URLs are duplicated across players.
 
 **Mobile UI required**: Even though friends will mostly use laptops, the UI must work on mobile because:
+
 - Easier to test with multiple "players" using one laptop + phone
 - Some friends might join from their phone anyway
 - Google Photos Picker works fine on mobile
 
 Mobile considerations:
+
 - Touch-friendly tap targets (min 44px)
 - Responsive layout (single column on narrow screens)
 - No hover-dependent interactions
