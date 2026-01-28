@@ -1091,16 +1091,23 @@ function createGameStore() {
 			return photoLoadingProgress;
 		},
 
-		// Derived
+		// Derived - use reactive `players` state, not `internalState.players`
 		get canStartGame() {
 			// Need at least 2 non-spectator players with photos
-			const playersWithPhotos = internalState.players.filter(
-				(p) => !p.isSpectator && p.photoIds.length >= 15
-			);
-			return isHost && playersWithPhotos.length >= 2 && allPlayersReady(internalState);
+			const playersWithPhotos = players.filter((p) => !p.isSpectator && p.photoIds.length >= 15);
+			// Inline allPlayersReady check using reactive players
+			const allReady =
+				players.length > 0 &&
+				players.every((p) => {
+					if (p.isSpectator) {
+						return p.name.trim().length > 0 && p.isConnected;
+					}
+					return p.name.trim().length > 0 && p.photoIds.length >= 15 && p.isConnected;
+				});
+			return isHost && playersWithPhotos.length >= 2 && allReady;
 		},
 		get playersWithPhotosCount() {
-			return internalState.players.filter((p) => !p.isSpectator && p.photoIds.length >= 15).length;
+			return players.filter((p) => !p.isSpectator && p.photoIds.length >= 15).length;
 		},
 		get myPlayer() {
 			return players.find((p) => p.id === myPlayerId) || null;
