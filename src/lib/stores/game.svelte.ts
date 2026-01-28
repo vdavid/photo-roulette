@@ -44,7 +44,13 @@ import {
 	completeRound,
 	allPlayersGuessed,
 } from '$lib/game/round.js';
-import { processPickedPhotos, createDataUrl, type ProcessedImage } from '$lib/photos/index.js';
+import {
+	processPickedPhotos,
+	createDataUrl,
+	isTestPlayer,
+	generateTestPhotos,
+	type ProcessedImage,
+} from '$lib/photos/index.js';
 import { getRankedScores, determineWinner, createEmptyPlayerScore } from '$lib/game/scoring.js';
 import { calculateSuperlatives } from '$lib/game/superlatives.js';
 
@@ -469,22 +475,30 @@ function createGameStore() {
 		photoError = null;
 
 		try {
-			// Step 1: Pick photos from Google Photos
-			const result = await pickerFn();
-			log('info', 'Photos picked', { count: result.photos.length });
+			let processedImages: ProcessedImage[];
 
-			// Step 2: Process photos - fetch with OAuth, resize, compress to base64
-			const processedImages = await processPickedPhotos(
-				result.photos.map((p) => ({
-					id: p.id,
-					baseUrl: p.baseUrl,
-					mimeType: 'image/jpeg',
-				})),
-				undefined, // Use stored token
-				(current, total, message) => {
-					log('debug', message);
-				}
-			);
+			// Check if this is a test player (name like "AAA", "BBB", etc.)
+			if (isTestPlayer(myName)) {
+				log('info', 'Test player detected, generating test photos', { name: myName });
+				processedImages = generateTestPhotos(myName, 15);
+			} else {
+				// Step 1: Pick photos from Google Photos
+				const result = await pickerFn();
+				log('info', 'Photos picked', { count: result.photos.length });
+
+				// Step 2: Process photos - fetch with OAuth, resize, compress to base64
+				processedImages = await processPickedPhotos(
+					result.photos.map((p) => ({
+						id: p.id,
+						baseUrl: p.baseUrl,
+						mimeType: 'image/jpeg',
+					})),
+					undefined, // Use stored token
+					(current, total, message) => {
+						log('debug', message);
+					}
+				);
+			}
 
 			// Step 3: Create Photo objects with imageData
 			const pickedPhotos: Photo[] = processedImages.map((img: ProcessedImage) => ({

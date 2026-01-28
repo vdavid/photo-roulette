@@ -100,6 +100,33 @@ Mobile considerations:
 - No hover-dependent interactions
 - Test on iOS Safari + Android Chrome
 
+## Test mode (local development & E2E)
+
+For local development and E2E testing, the app supports **test players** that don't require Google Photos integration.
+
+**How it works**:
+
+- Use a player name with 3 identical uppercase letters: `AAA`, `BBB`, `CCC`, etc.
+- When you click "Connect photos", the app generates 15 test images automatically
+- Each image has a colored background and displays the player name + photo number (e.g., "AAA/1", "BBB/5")
+- Different letters get different colors (A=red, B=blue, C=green, etc.)
+
+**Example test session**:
+
+1. Host a game as "AAA"
+2. Click "Connect photos" — instantly generates 15 red test images
+3. Open another browser, join as "BBB"
+4. Click "Connect photos" — instantly generates 15 blue test images
+5. Start the game — photos display correctly, easy to verify whose photo is shown
+
+**Benefits**:
+
+- Zero setup required — no Google account, no OAuth, no external dependencies
+- Works offline
+- Deterministic — same name always produces same images
+- Perfect for E2E tests with Playwright
+- Self-documenting — the name pattern makes it obvious this is test mode
+
 ## What we're NOT building
 
 - User accounts or persistence

@@ -107,3 +107,6 @@ export {
 	JPEG_QUALITY,
 	type ProcessedImage,
 } from './image-processor.js';
+
+// Test photo generation (for development and E2E testing)
+export { isTestPlayer, generateTestPhotos, canGenerateTestPhotos } from './test-photos.js';
