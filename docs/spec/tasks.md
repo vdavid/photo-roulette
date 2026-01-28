@@ -96,17 +96,17 @@ All game logic should be pure TypeScript functions, tested independently of UI.
 
 ### 4.1 OAuth setup
 
-- [ ] Create Google Cloud project
-- [ ] Configure OAuth consent screen (unverified, test users)
-- [ ] Get client ID for Picker API
+- [x] Create Google Cloud project
+- [x] Configure OAuth consent screen (unverified, test users)
+- [x] Get client ID for Picker API
 
 ### 4.2 Picker API integration
 
-- [ ] Implement session creation
-- [ ] Open picker in new tab with `/autoclose`
-- [ ] Poll for completion
-- [ ] Retrieve `baseUrl`s for selected photos
-- [ ] Handle session expiry (60 min)
+- [x] Implement session creation
+- [x] Open picker in new tab with `/autoclose`
+- [x] Poll for completion
+- [x] Retrieve `baseUrl`s for selected photos
+- [x] Handle session expiry (60 min)
 
 ---
 
