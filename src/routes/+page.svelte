@@ -129,13 +129,16 @@
 		settings={gameStore.settings}
 		myPlayerId={gameStore.myPlayerId || ''}
 		isHost={gameStore.isHost}
+		isSpectator={gameStore.myPlayer?.isSpectator ?? false}
 		hasConnectedPhotos={gameStore.hasConnectedPhotos}
 		photoCount={gameStore.photoCount}
 		isConnectingPhotos={gameStore.isConnectingPhotos}
 		photoLoadingProgress={gameStore.photoLoadingProgress}
 		canStartGame={gameStore.canStartGame}
+		playersWithPhotosCount={gameStore.playersWithPhotosCount}
 		onUpdateName={handleUpdateName}
 		onUpdateSettings={handleUpdateSettings}
+		onToggleSpectator={(isSpectator) => gameStore.setSpectatorMode(isSpectator)}
 		onConnectPhotos={handleConnectPhotos}
 		onStartGame={handleStartGame}
 		onLeaveGame={handleLeaveGame}

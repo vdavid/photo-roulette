@@ -9,13 +9,16 @@
 		settings: GameSettings;
 		myPlayerId: string;
 		isHost: boolean;
+		isSpectator: boolean;
 		hasConnectedPhotos: boolean;
 		photoCount: number;
 		isConnectingPhotos: boolean;
 		photoLoadingProgress: { loaded: number; total: number } | null;
 		canStartGame: boolean;
+		playersWithPhotosCount: number;
 		onUpdateName: (_name: string, _emoji: string) => void;
 		onUpdateSettings: (_settings: GameSettings) => void;
+		onToggleSpectator: (_isSpectator: boolean) => void;
 		onConnectPhotos: () => void;
 		onStartGame: () => void;
 		onLeaveGame: () => void;
@@ -28,13 +31,16 @@
 		settings,
 		myPlayerId,
 		isHost,
+		isSpectator,
 		hasConnectedPhotos,
 		photoCount,
 		isConnectingPhotos,
 		photoLoadingProgress,
 		canStartGame,
+		playersWithPhotosCount,
 		onUpdateName,
 		onUpdateSettings,
+		onToggleSpectator,
 		onConnectPhotos,
 		onStartGame,
 		onLeaveGame,
@@ -161,41 +167,61 @@
 	</Card>
 
 	<Card>
-		<div class="photos-section">
-			<h3>Your photos</h3>
-
-			{#if hasConnectedPhotos}
-				<div class="photos-status success">
-					<span class="status-icon">✓</span>
-					<span>{photoCount} photos connected</span>
+		{#if isSpectator}
+			<div class="spectator-section">
+				<h3>Spectator mode</h3>
+				<p class="spectator-info">
+					You're watching this game without contributing photos. You can still guess and earn
+					points!
+				</p>
+				<div class="spectator-badge">
+					<span class="badge-icon">👁️</span>
+					<span>Spectating</span>
 				</div>
-				<Button variant="secondary" onclick={onConnectPhotos} disabled={isConnectingPhotos}>
-					{isConnectingPhotos ? 'Connecting...' : 'Change photos'}
-				</Button>
-			{:else if photoLoadingProgress}
-				<div class="photos-loading">
-					<p class="photos-loading-text">
-						Loading your {photoLoadingProgress.total} selected photos...
-					</p>
-					<div class="photos-loading-progress">
-						<span class="progress-count">{photoLoadingProgress.loaded} of {photoLoadingProgress.total}</span>
-						<div class="progress-bar">
-							<div
-								class="progress-fill"
-								style="width: {(photoLoadingProgress.loaded / photoLoadingProgress.total) * 100}%"
-							></div>
+				<Button variant="secondary" onclick={() => onToggleSpectator(false)}>Join as player</Button>
+			</div>
+		{:else}
+			<div class="photos-section">
+				<h3>Your photos</h3>
+
+				{#if hasConnectedPhotos}
+					<div class="photos-status success">
+						<span class="status-icon">✓</span>
+						<span>{photoCount} photos connected</span>
+					</div>
+					<Button variant="secondary" onclick={onConnectPhotos} disabled={isConnectingPhotos}>
+						{isConnectingPhotos ? 'Connecting...' : 'Change photos'}
+					</Button>
+				{:else if photoLoadingProgress}
+					<div class="photos-loading">
+						<p class="photos-loading-text">
+							Loading your {photoLoadingProgress.total} selected photos...
+						</p>
+						<div class="photos-loading-progress">
+							<span class="progress-count"
+								>{photoLoadingProgress.loaded} of {photoLoadingProgress.total}</span
+							>
+							<div class="progress-bar">
+								<div
+									class="progress-fill"
+									style="width: {(photoLoadingProgress.loaded / photoLoadingProgress.total) * 100}%"
+								></div>
+							</div>
 						</div>
 					</div>
-				</div>
-			{:else}
-				<p class="photos-hint">
-					Connect at least {MIN_PHOTOS_PER_PLAYER} photos from Google Photos to play.
-				</p>
-				<Button onclick={onConnectPhotos} loading={isConnectingPhotos} fullWidth>
-					{isConnectingPhotos ? 'Connecting...' : 'Connect your photos'}
-				</Button>
-			{/if}
-		</div>
+				{:else}
+					<p class="photos-hint">
+						Connect at least {MIN_PHOTOS_PER_PLAYER} photos from Google Photos to play.
+					</p>
+					<Button onclick={onConnectPhotos} loading={isConnectingPhotos} fullWidth>
+						{isConnectingPhotos ? 'Connecting...' : 'Connect your photos'}
+					</Button>
+					<Button variant="ghost" onclick={() => onToggleSpectator(true)} fullWidth>
+						Just watch (spectator mode)
+					</Button>
+				{/if}
+			</div>
+		{/if}
 	</Card>
 
 	<footer class="footer">
@@ -203,6 +229,9 @@
 			<Button size="lg" fullWidth onclick={onStartGame} disabled={!canStartGame}>
 				{#if canStartGame}
 					Start game
+				{:else if playersWithPhotosCount < 2}
+					Need {2 - playersWithPhotosCount} more player{playersWithPhotosCount === 1 ? '' : 's'} with
+					photos
 				{:else}
 					Waiting for players...
 				{/if}
@@ -337,16 +366,36 @@
 	}
 
 	.profile-section,
-	.photos-section {
+	.photos-section,
+	.spectator-section {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-md);
 	}
 
 	.profile-section h3,
-	.photos-section h3 {
+	.photos-section h3,
+	.spectator-section h3 {
 		margin: 0;
 		font-size: var(--font-size-lg);
+	}
+
+	.spectator-info {
+		color: var(--color-text-muted);
+		margin: 0;
+	}
+
+	.spectator-badge {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+		padding: var(--space-md);
+		border-radius: var(--radius-sm);
+		background: var(--color-secondary);
+	}
+
+	.badge-icon {
+		font-size: 1.25rem;
 	}
 
 	.profile-fields {

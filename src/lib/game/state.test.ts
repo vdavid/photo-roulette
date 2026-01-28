@@ -29,6 +29,7 @@ const createTestPlayer = (overrides: Partial<Player> = {}): Player => ({
 	isHost: false,
 	isReady: true,
 	isConnected: true,
+	isSpectator: false,
 	...overrides,
 });
 

@@ -36,6 +36,8 @@
 	const timerDuration = $derived(timerEndTime - timerStartTime);
 	const progress = $derived(Math.max(0, timeRemaining / timerDuration));
 	const hasGuessed = $derived(myGuess !== null);
+	// Only non-spectators can be guessed (spectators have no photos)
+	const guessablePlayers = $derived(players.filter((p) => !p.isSpectator));
 
 	// Animate timer and blur
 	function updateTimer() {
@@ -125,7 +127,7 @@
 		</div>
 
 		<div class="player-buttons">
-			{#each players as player (player.id)}
+			{#each guessablePlayers as player (player.id)}
 				<button
 					class="guess-button"
 					class:selected={myGuess === player.id}

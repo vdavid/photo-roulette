@@ -107,12 +107,14 @@ export function removePlayer(state: GameState, playerId: PlayerId): GameState {
 }
 
 /**
- * Update player info (name, emoji, photos, ready state)
+ * Update player info (name, emoji, photos, ready state, spectator mode)
  */
 export function updatePlayer(
 	state: GameState,
 	playerId: PlayerId,
-	updates: Partial<Pick<Player, 'name' | 'emoji' | 'photoIds' | 'isReady' | 'isConnected'>>
+	updates: Partial<
+		Pick<Player, 'name' | 'emoji' | 'photoIds' | 'isReady' | 'isConnected' | 'isSpectator'>
+	>
 ): GameState {
 	const playerIndex = state.players.findIndex((p) => p.id === playerId);
 	if (playerIndex === -1) {
@@ -152,6 +154,11 @@ export function updateSettings(state: GameState, settings: Partial<GameSettings>
  * Check if a player is ready to start
  */
 export function isPlayerReady(player: Player): boolean {
+	// Spectators are ready as soon as they have a name and are connected
+	if (player.isSpectator) {
+		return player.name.trim().length > 0 && player.isConnected;
+	}
+	// Regular players need photos
 	return (
 		player.name.trim().length > 0 &&
 		player.photoIds.length >= MIN_PHOTOS_PER_PLAYER &&

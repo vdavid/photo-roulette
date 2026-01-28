@@ -20,6 +20,7 @@ export interface Player {
 	isHost: boolean;
 	isReady: boolean;
 	isConnected: boolean;
+	isSpectator: boolean;
 }
 
 /** A photo from a player's collection */

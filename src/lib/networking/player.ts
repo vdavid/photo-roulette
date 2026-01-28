@@ -53,7 +53,7 @@ export interface PlayerNetworkEvents {
 	/** Player list updated */
 	playerUpdate: (
 		playerId: PlayerId,
-		updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady'>>
+		updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady' | 'isSpectator'>>
 	) => void;
 	/** Player left the game */
 	playerLeft: (playerId: PlayerId) => void;
@@ -167,9 +167,11 @@ export class PlayerNetwork {
 	}
 
 	/**
-	 * Update player info (name, emoji, ready state)
+	 * Update player info (name, emoji, ready state, spectator mode)
 	 */
-	sendPlayerUpdate(updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady'>>): void {
+	sendPlayerUpdate(
+		updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady' | 'isSpectator'>>
+	): void {
 		if (!this.hostConnection || !this.myPlayerId) return;
 
 		const message: PlayerUpdateMessage = {

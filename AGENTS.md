@@ -5,7 +5,7 @@
 1. **Use `pnpm`**: not npm, not yarn. Always `pnpm install`, `pnpm add`, `pnpm run`.
 2. **Use LATEST package versions**: always check npm for current versions before installing. Don't rely on training data, it's outdated. Run `pnpm add package@latest` or check https://www.npmjs.com/ for the current version.
 3. **Sentence case everywhere**: all headings, labels, buttons, UI text must use Sentence case (NOT Title Case). "Start game" not "Start Game". "Connect your photos" not "Connect Your Photos".
-4. **Read the docs**: Read CONTRIBUTING.md, docs/spec/tech.md, docs/spec/game.md, and @docs/spec/tasks.md to get oriented.
+4. **Read the docs**: Read CONTRIBUTING.md, docs/spec/tech.md, docs/spec/game.md, and @docs/spec/tasks.md to get oriented!!!
 
 ---
 

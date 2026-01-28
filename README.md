@@ -3,7 +3,7 @@
 A browser-based photo guessing game for friends.
 Connect your Google Photos, and guess whose photo is on screen. Fast, chaotic, hilarious.
 
-As a tribute to https://photoroulette.app/ which I couldn't use with friends in a remote setting. 
+As a tribute to https://photoroulette.app/ which I couldn't use with friends in a remote setting.
 
 ## How to play
 

@@ -39,14 +39,19 @@
 				</svg>
 			</span>
 		{/if}
+		{#if player.isSpectator}
+			<span class="spectator-badge" title="Spectator">👁️</span>
+		{/if}
 	</div>
 
 	<div class="info">
 		<span class="name">{player.name || 'Unnamed'}</span>
 		{#if showReadyState}
-			<span class="status" class:has-photos={hasEnoughPhotos}>
+			<span class="status" class:has-photos={hasEnoughPhotos} class:spectator={player.isSpectator}>
 				{#if !player.isConnected}
 					Disconnected
+				{:else if player.isSpectator}
+					Spectating
 				{:else if photoCount === 0}
 					No photos
 				{:else}
@@ -132,6 +137,17 @@
 		color: var(--color-text);
 	}
 
+	.spectator-badge {
+		position: absolute;
+		bottom: -2px;
+		left: -2px;
+		font-size: 12px;
+		background-color: var(--color-secondary);
+		border-radius: var(--radius-full);
+		padding: 2px 4px;
+		line-height: 1;
+	}
+
 	.info {
 		flex: 1;
 		display: flex;
@@ -155,6 +171,11 @@
 
 	.status.has-photos {
 		color: var(--color-success);
+	}
+
+	.status.spectator {
+		color: var(--color-text-muted);
+		font-style: italic;
 	}
 
 	.ready-indicator {

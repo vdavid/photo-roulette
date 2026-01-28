@@ -93,11 +93,11 @@ export interface PlayerKickedMessage extends BaseMessage {
 
 // === Lobby Messages ===
 
-/** Player updating their info (name, emoji, ready state) */
+/** Player updating their info (name, emoji, ready state, spectator mode) */
 export interface PlayerUpdateMessage extends BaseMessage {
 	type: 'player-update';
 	playerId: PlayerId;
-	updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady'>>;
+	updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady' | 'isSpectator'>>;
 }
 
 /** Player submitting their photos */

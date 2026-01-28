@@ -206,6 +206,7 @@ function createGameStore() {
 			isHost: true,
 			isReady: false,
 			isConnected: true,
+			isSpectator: false,
 		};
 
 		// Initialize game state - transitionToLobby adds the host player
@@ -259,6 +260,7 @@ function createGameStore() {
 				isHost: false,
 				isReady: false,
 				isConnected: true,
+				isSpectator: false,
 			};
 
 			internalState = addPlayer(internalState, newPlayer);
@@ -520,6 +522,39 @@ function createGameStore() {
 		syncState();
 	}
 
+	function setSpectatorMode(spectator: boolean) {
+		if (!myPlayerId) return;
+
+		log('info', 'Setting spectator mode', { isSpectator: spectator });
+
+		if (isHost) {
+			const player = internalState.players.find((p) => p.id === myPlayerId);
+			if (player) {
+				player.isSpectator = spectator;
+				// Clear photos if becoming spectator
+				if (spectator) {
+					player.photoIds = [];
+					photos = photos.filter((p) => p.ownerId !== myPlayerId);
+				}
+				// Recalculate ready state
+				player.isReady =
+					player.name.trim().length > 0 &&
+					player.isConnected &&
+					(spectator || player.photoIds.length >= 15);
+			}
+			hostNetwork?.broadcastPlayerUpdate(myPlayerId, { isSpectator: spectator });
+			syncState();
+		} else if (playerNetwork) {
+			playerNetwork.sendPlayerUpdate({ isSpectator: spectator });
+		}
+
+		// Update local photo state if becoming spectator
+		if (spectator) {
+			hasConnectedPhotos = false;
+			photoCount = 0;
+		}
+	}
+
 	async function connectPhotos(
 		pickerFn: () => Promise<{ photos: Array<{ id: string; baseUrl: string }> }>
 	) {
@@ -620,10 +655,12 @@ function createGameStore() {
 			internalState.playerScores.set(player.id, createEmptyPlayerScore(player.id));
 		}
 
-		// Initialize feature counts for fair photo distribution
+		// Initialize feature counts for fair photo distribution (only non-spectators have photos)
 		featureCounts = new Map();
 		for (const player of internalState.players) {
-			featureCounts.set(player.id, 0);
+			if (!player.isSpectator) {
+				featureCounts.set(player.id, 0);
+			}
 		}
 
 		// Clear game photos from previous game
@@ -841,10 +878,12 @@ function createGameStore() {
 			internalState.playerScores.set(player.id, createEmptyPlayerScore(player.id));
 		}
 
-		// Reset feature counts for fair distribution
+		// Reset feature counts for fair distribution (only non-spectators have photos)
 		featureCounts = new Map();
 		for (const player of internalState.players) {
-			featureCounts.set(player.id, 0);
+			if (!player.isSpectator) {
+				featureCounts.set(player.id, 0);
+			}
 		}
 
 		// Clear game photos for new game
@@ -900,6 +939,7 @@ function createGameStore() {
 			isHost: true,
 			isReady: false,
 			isConnected: true,
+			isSpectator: false,
 		};
 
 		internalState = transitionToLobby(internalState, hostPlayer);
@@ -1053,7 +1093,14 @@ function createGameStore() {
 
 		// Derived
 		get canStartGame() {
-			return isHost && players.length >= 2 && allPlayersReady(internalState);
+			// Need at least 2 non-spectator players with photos
+			const playersWithPhotos = internalState.players.filter(
+				(p) => !p.isSpectator && p.photoIds.length >= 15
+			);
+			return isHost && playersWithPhotos.length >= 2 && allPlayersReady(internalState);
+		},
+		get playersWithPhotosCount() {
+			return internalState.players.filter((p) => !p.isSpectator && p.photoIds.length >= 15).length;
 		},
 		get myPlayer() {
 			return players.find((p) => p.id === myPlayerId) || null;
@@ -1064,6 +1111,7 @@ function createGameStore() {
 		joinGame,
 		updateMyInfo,
 		updateGameSettings,
+		setSpectatorMode,
 		connectPhotos,
 		startGame,
 		submitGuess,

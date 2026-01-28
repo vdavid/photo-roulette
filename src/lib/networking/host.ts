@@ -52,7 +52,7 @@ export interface HostNetworkEvents {
 	/** Player updated their info */
 	playerUpdate: (
 		playerId: PlayerId,
-		updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady'>>
+		updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady' | 'isSpectator'>>
 	) => void;
 	/** Player submitted photos */
 	photosSubmitted: (playerId: PlayerId, photos: Photo[]) => void;
@@ -153,7 +153,7 @@ export class HostNetwork {
 	 */
 	broadcastPlayerUpdate(
 		playerId: PlayerId,
-		updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady'>>
+		updates: Partial<Pick<Player, 'name' | 'emoji' | 'isReady' | 'isSpectator'>>
 	): void {
 		const message: PlayerUpdateMessage = {
 			...createBaseMessage('player-update', this.hostPlayerId),
