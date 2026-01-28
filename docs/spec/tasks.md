@@ -116,51 +116,51 @@ All components follow the autumn color palette and design principles in [game.md
 
 ### 5.1 Landing page
 
-- [ ] "Host a game" button
-- [ ] "Join a game" with room code input
-- [ ] Friendly welcome text
+- [x] "Host a game" button
+- [x] "Join a game" with room code input
+- [x] Friendly welcome text
 
 ### 5.2 Lobby
 
-- [ ] Room code display + copy button
-- [ ] Game settings chips (host can edit)
-- [ ] Player list with name, emoji, photo count, ready state
-- [ ] "Connect your photos" button
-- [ ] Player name input + animal emoji picker
-- [ ] "Start game" button (host only, enabled when ready)
+- [x] Room code display + copy button
+- [x] Game settings chips (host can edit)
+- [x] Player list with name, emoji, photo count, ready state
+- [x] "Connect your photos" button
+- [x] Player name input + animal emoji picker
+- [x] "Start game" button (host only, enabled when ready)
 
 ### 5.3 Round view
 
-- [ ] Photo display with letterbox fit
-- [ ] Progressive blur reveal (3 sec)
-- [ ] Ken Burns slow zoom effect
-- [ ] Circular progress ring timer
-- [ ] Player guess buttons with checkmark selection
-- [ ] Live guess counter ("5/8 have guessed")
+- [x] Photo display with letterbox fit
+- [x] Progressive blur reveal (3 sec)
+- [x] Ken Burns slow zoom effect
+- [x] Circular progress ring timer
+- [x] Player guess buttons with checkmark selection
+- [x] Live guess counter ("5/8 have guessed")
 
 ### 5.4 Round result view
 
-- [ ] "It was X's photo!" header
-- [ ] Who guessed what list (correct/wrong/no guess)
-- [ ] Points earned this round
-- [ ] Current leaderboard
-- [ ] Auto-advance timer
+- [x] "It was X's photo!" header
+- [x] Who guessed what list (correct/wrong/no guess)
+- [x] Points earned this round
+- [x] Current leaderboard
+- [x] Auto-advance timer
 
 ### 5.5 Final scoreboard
 
-- [ ] Confetti animation
-- [ ] Podium with top 3 + crown for winner
-- [ ] Full leaderboard
-- [ ] Superlatives section
-- [ ] Expandable detailed stats
-- [ ] "Rematch" and "New game" buttons
+- [x] Confetti animation
+- [x] Podium with top 3 + crown for winner
+- [x] Full leaderboard
+- [x] Superlatives section
+- [x] Expandable detailed stats
+- [x] "Rematch" and "New game" buttons
 
 ### 5.6 Shared components
 
-- [ ] Loading spinner (CSS-only)
-- [ ] Photo loading with progress (if feasible)
-- [ ] Connection status indicator (low priority)
-- [ ] Sound effects (soft tick, chime, whoosh, victory)
+- [x] Loading spinner (CSS-only)
+- [x] Photo loading with progress (if feasible)
+- [x] Connection status indicator (low priority)
+- [x] Sound effects (soft tick, chime, whoosh, victory)
 
 ---
 

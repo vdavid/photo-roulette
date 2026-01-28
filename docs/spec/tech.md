@@ -39,14 +39,20 @@ Host (you) ←── WebRTC DataChannel ──→ 7 friends
 1. Player clicks "connect photos"
 2. Opens Google Photos in new tab via `pickerUri`
 3. Player selects 20-30 photos manually
-4. App receives list of `baseUrl`s (valid 60 min)
-5. URLs sent to host, photos fetched directly from Google CDN when shown
+4. App receives list of `baseUrl`s from Picker API
+5. **Photos are fetched immediately** using player's OAuth token
+6. Each photo is resized (max 1600x1600) and compressed (JPEG 80%)
+7. Image data (base64) is sent to host via WebRTC
+8. Host stores image data in memory and broadcasts during rounds
+
+**Why transfer image data, not URLs?**
+
+Google Photos URLs are tied to the OAuth token of the user who picked them. Other players can't access those URLs directly — they'd get 403 errors. By downloading and transferring the actual image bytes, all players can view any photo.
 
 **Constraints**:
 
 - No iframe (security restriction)
 - Use `/autoclose` suffix for better UX
-- Refresh session if game exceeds 60 min
 - OAuth not verified — friends see warning, click through
 
 ## P2P with PeerJS
@@ -60,7 +66,7 @@ Host (you) ←── WebRTC DataChannel ──→ 7 friends
 
 **Data transferred**:
 
-- Photo URLs (not bytes) — tiny payloads
+- Photo image data (base64 JPEG, ~150-300 KB each)
 - Player names, scores, guesses
 - Game state updates (current phase, timer, results)
 
