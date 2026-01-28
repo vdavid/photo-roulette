@@ -29,6 +29,14 @@
 	let currentSlideIndex = $state(0);
 	let slideInterval: ReturnType<typeof setInterval> | null = null;
 
+	// Calculate slide index based on wall-clock time so all players see the same photo
+	function calculateSlideIndex(photoCount: number): number {
+		if (photoCount === 0) return 0;
+		// Use wall-clock time divided by 4 seconds, modulo photo count
+		// This ensures all players with synced clocks see the same slide
+		return Math.floor(Date.now() / 4000) % photoCount;
+	}
+
 	// Get player info helper
 	function getPlayer(playerId: PlayerId): Player | undefined {
 		return players.find((p) => p.id === playerId);
@@ -96,11 +104,15 @@
 			showConfetti = false;
 		}, 5000);
 
-		// Start slideshow
+		// Start slideshow - use wall-clock time so all players are in sync
 		if (allGamePhotos.length > 0) {
+			// Set initial index based on current time
+			currentSlideIndex = calculateSlideIndex(allGamePhotos.length);
+
+			// Update every 100ms to stay in sync (checks if we need to change slide)
 			slideInterval = setInterval(() => {
-				currentSlideIndex = (currentSlideIndex + 1) % allGamePhotos.length;
-			}, 4000);
+				currentSlideIndex = calculateSlideIndex(allGamePhotos.length);
+			}, 100);
 		}
 	});
 
