@@ -86,16 +86,54 @@ No Caddy restart needed — it serves files directly from `build/`.
 
 ## Docker
 
-Build and run the container:
+### 1. Clone and build
 
 ```bash
+# Clone to /opt (or wherever you prefer)
+sudo mkdir -p /opt/photo-roulette
+sudo chown $USER:$USER /opt/photo-roulette
+git clone https://github.com/vdavid/photo-roulette.git /opt/photo-roulette
+
+# Build the Docker image
+cd /opt/photo-roulette
 docker build -t photo-roulette .
-docker run -p 8080:80 photo-roulette
+```
+
+### 2. Run the container
+
+```bash
+docker run -d --name photo-roulette -p 8080:80 --restart unless-stopped photo-roulette
 ```
 
 The app will be available at `http://localhost:8080`.
 
-For production with HTTPS, run behind a reverse proxy (Caddy, Traefik, etc.) or use Docker Compose with your preferred setup.
+### 3. Configure Caddy for HTTPS
+
+Add to your Caddyfile:
+
+```caddy
+photos.yourdomain.com {
+    reverse_proxy localhost:8080
+}
+```
+
+Then reload Caddy:
+
+```bash
+sudo systemctl reload caddy
+```
+
+### 4. Updating
+
+To deploy updates:
+
+```bash
+cd /opt/photo-roulette
+git pull
+docker build -t photo-roulette .
+docker stop photo-roulette && docker rm photo-roulette
+docker run -d --name photo-roulette -p 8080:80 --restart unless-stopped photo-roulette
+```
 
 ## Vercel / Netlify / Cloudflare Pages
 
