@@ -54,6 +54,77 @@ export function selectRandomPhoto(pool: PhotoPool): {
 }
 
 /**
+ * Select a photo fairly, ensuring roughly equal distribution among players.
+ * Prioritizes players who have been featured fewer times.
+ * The difference between any two players' feature counts should never exceed 1.
+ */
+export function selectFairPhoto(
+	pool: PhotoPool,
+	featureCounts: Map<PlayerId, number>
+): {
+	photo: Photo;
+	updatedPool: PhotoPool;
+} | null {
+	let available = [...pool.available];
+	let used = [...pool.used];
+
+	// If no photos available, recycle used photos
+	if (available.length === 0) {
+		if (used.length === 0) {
+			return null; // No photos at all
+		}
+		available = shuffleArray(used);
+		used = [];
+	}
+
+	// Group available photos by owner
+	const photosByOwner = new Map<PlayerId, Photo[]>();
+	for (const photo of available) {
+		const ownerPhotos = photosByOwner.get(photo.ownerId) || [];
+		ownerPhotos.push(photo);
+		photosByOwner.set(photo.ownerId, ownerPhotos);
+	}
+
+	// Find the minimum feature count among owners who have available photos
+	let minCount = Infinity;
+	for (const ownerId of photosByOwner.keys()) {
+		const count = featureCounts.get(ownerId) || 0;
+		if (count < minCount) {
+			minCount = count;
+		}
+	}
+
+	// Get all owners with the minimum count
+	const eligibleOwners: PlayerId[] = [];
+	for (const ownerId of photosByOwner.keys()) {
+		const count = featureCounts.get(ownerId) || 0;
+		if (count === minCount) {
+			eligibleOwners.push(ownerId);
+		}
+	}
+
+	// Pick a random eligible owner
+	const selectedOwner = eligibleOwners[Math.floor(Math.random() * eligibleOwners.length)];
+	const ownerPhotos = photosByOwner.get(selectedOwner)!;
+
+	// Pick a random photo from that owner
+	const photo = ownerPhotos[Math.floor(Math.random() * ownerPhotos.length)];
+
+	// Remove from available, add to used
+	const photoIndex = available.findIndex((p) => p.id === photo.id);
+	available.splice(photoIndex, 1);
+	used.push(photo);
+
+	return {
+		photo,
+		updatedPool: {
+			available,
+			used,
+		},
+	};
+}
+
+/**
  * Fisher-Yates shuffle algorithm
  */
 export function shuffleArray<T>(array: T[]): T[] {

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
 	createPhotoPool,
 	selectRandomPhoto,
+	selectFairPhoto,
 	shuffleArray,
 	createRound,
 	addGuess,
@@ -12,7 +13,7 @@ import {
 	hasPlayerGuessed,
 	getPlayerGuess,
 } from './round.js';
-import type { Photo, Round, Guess, PhotoPool } from './types.js';
+import type { Photo, Round, Guess, PhotoPool, PlayerId } from './types.js';
 
 describe('createPhotoPool', () => {
 	it('creates pool with all photos available', () => {
@@ -96,6 +97,155 @@ describe('selectRandomPhoto', () => {
 
 		expect(pool.available).toHaveLength(1);
 		expect(pool.used).toHaveLength(0);
+	});
+});
+
+describe('selectFairPhoto', () => {
+	beforeEach(() => {
+		vi.spyOn(Math, 'random').mockReturnValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it('returns null for empty pool', () => {
+		const pool: PhotoPool = { available: [], used: [] };
+		const featureCounts = new Map<PlayerId, number>();
+		const result = selectFairPhoto(pool, featureCounts);
+		expect(result).toBeNull();
+	});
+
+	it('selects photo from player with lowest feature count', () => {
+		const pool: PhotoPool = {
+			available: [
+				{ id: 'p1', ownerId: 'player1', baseUrl: 'url1' },
+				{ id: 'p2', ownerId: 'player2', baseUrl: 'url2' },
+				{ id: 'p3', ownerId: 'player2', baseUrl: 'url3' },
+			],
+			used: [],
+		};
+
+		const featureCounts = new Map<PlayerId, number>([
+			['player1', 2],
+			['player2', 0],
+		]);
+
+		const result = selectFairPhoto(pool, featureCounts);
+
+		expect(result).not.toBeNull();
+		expect(result!.photo.ownerId).toBe('player2');
+	});
+
+	it('selects from multiple players with same lowest count', () => {
+		const pool: PhotoPool = {
+			available: [
+				{ id: 'p1', ownerId: 'player1', baseUrl: 'url1' },
+				{ id: 'p2', ownerId: 'player2', baseUrl: 'url2' },
+			],
+			used: [],
+		};
+
+		const featureCounts = new Map<PlayerId, number>([
+			['player1', 1],
+			['player2', 1],
+		]);
+
+		const result = selectFairPhoto(pool, featureCounts);
+
+		expect(result).not.toBeNull();
+		// With Math.random() mocked to 0, should pick first eligible owner
+		expect(['player1', 'player2']).toContain(result!.photo.ownerId);
+	});
+
+	it('treats missing feature count as 0', () => {
+		const pool: PhotoPool = {
+			available: [
+				{ id: 'p1', ownerId: 'player1', baseUrl: 'url1' },
+				{ id: 'p2', ownerId: 'player2', baseUrl: 'url2' },
+			],
+			used: [],
+		};
+
+		// player2 not in map, should be treated as 0
+		const featureCounts = new Map<PlayerId, number>([['player1', 1]]);
+
+		const result = selectFairPhoto(pool, featureCounts);
+
+		expect(result).not.toBeNull();
+		expect(result!.photo.ownerId).toBe('player2');
+	});
+
+	it('moves selected photo to used', () => {
+		const pool: PhotoPool = {
+			available: [{ id: 'p1', ownerId: 'player1', baseUrl: 'url1' }],
+			used: [],
+		};
+
+		const featureCounts = new Map<PlayerId, number>();
+		const result = selectFairPhoto(pool, featureCounts);
+
+		expect(result!.updatedPool.available).toHaveLength(0);
+		expect(result!.updatedPool.used).toHaveLength(1);
+		expect(result!.updatedPool.used[0].id).toBe('p1');
+	});
+
+	it('recycles used photos when available is empty', () => {
+		const pool: PhotoPool = {
+			available: [],
+			used: [
+				{ id: 'p1', ownerId: 'player1', baseUrl: 'url1' },
+				{ id: 'p2', ownerId: 'player2', baseUrl: 'url2' },
+			],
+		};
+
+		const featureCounts = new Map<PlayerId, number>();
+		const result = selectFairPhoto(pool, featureCounts);
+
+		expect(result).not.toBeNull();
+		expect(result!.updatedPool.available).toHaveLength(1);
+		expect(result!.updatedPool.used).toHaveLength(1);
+	});
+
+	it('ensures fair distribution over multiple selections', () => {
+		vi.restoreAllMocks(); // Use real random for this test
+
+		// Create pool with 2 photos per player
+		const pool: PhotoPool = {
+			available: [
+				{ id: 'p1a', ownerId: 'player1', baseUrl: 'url1' },
+				{ id: 'p1b', ownerId: 'player1', baseUrl: 'url2' },
+				{ id: 'p2a', ownerId: 'player2', baseUrl: 'url3' },
+				{ id: 'p2b', ownerId: 'player2', baseUrl: 'url4' },
+				{ id: 'p3a', ownerId: 'player3', baseUrl: 'url5' },
+				{ id: 'p3b', ownerId: 'player3', baseUrl: 'url6' },
+			],
+			used: [],
+		};
+
+		const featureCounts = new Map<PlayerId, number>([
+			['player1', 0],
+			['player2', 0],
+			['player3', 0],
+		]);
+
+		let currentPool = pool;
+
+		// Select 6 photos (2 per player)
+		for (let i = 0; i < 6; i++) {
+			const result = selectFairPhoto(currentPool, featureCounts);
+			expect(result).not.toBeNull();
+
+			// Update feature count
+			const ownerId = result!.photo.ownerId;
+			featureCounts.set(ownerId, (featureCounts.get(ownerId) || 0) + 1);
+			currentPool = result!.updatedPool;
+		}
+
+		// Each player should have exactly 2 features
+		expect(featureCounts.get('player1')).toBe(2);
+		expect(featureCounts.get('player2')).toBe(2);
+		expect(featureCounts.get('player3')).toBe(2);
 	});
 });
 

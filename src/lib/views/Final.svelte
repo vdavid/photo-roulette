@@ -1,20 +1,33 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { Button } from '$lib/components';
-	import type { Player, PlayerId, FinalResults } from '$lib/game/types.js';
+	import type { Player, PlayerId, FinalResults, RoundResult } from '$lib/game/types.js';
 
 	interface Props {
 		results: FinalResults;
 		players: Player[];
 		isHost: boolean;
+		roundResults: RoundResult[];
+		gamePhotoUrls: Map<string, string>;
 		onRematch: () => void;
 		onNewGame: () => void;
 		onLeaveGame: () => void;
 	}
 
-	let { results, players, isHost, onRematch, onNewGame, onLeaveGame }: Props = $props();
+	let {
+		results,
+		players,
+		isHost,
+		roundResults,
+		gamePhotoUrls,
+		onRematch,
+		onNewGame,
+		onLeaveGame,
+	}: Props = $props();
 
 	let showConfetti = $state(false);
+	let currentSlideIndex = $state(0);
+	let slideInterval: ReturnType<typeof setInterval> | null = null;
 
 	// Get player info helper
 	function getPlayer(playerId: PlayerId): Player | undefined {
@@ -24,14 +37,77 @@
 	const podium = $derived(results.rankings.slice(0, 3));
 	const others = $derived(results.rankings.slice(3));
 
+	// Get all game photos as array for slideshow
+	const allGamePhotos = $derived(Array.from(gamePhotoUrls.entries()).map(([id, url]) => ({ id, url })));
+
+	// Calculate photos for each superlative type
+	const superlativePhotos = $derived.by(() => {
+		const photos: Record<string, string[]> = {
+			fastestFingers: [],
+			mostFeatured: [],
+			sharpshooter: [],
+			luckyGuesser: [],
+		};
+
+		for (const superlative of results.superlatives) {
+			const playerId = superlative.playerId;
+
+			for (const round of roundResults) {
+				const photoUrl = gamePhotoUrls.get(round.photoId);
+				if (!photoUrl) continue;
+
+				const playerScore = round.scores.find((s) => s.playerId === playerId);
+				if (!playerScore) continue;
+
+				// Fastest fingers: rounds where this player was fastest
+				if (superlative.type === 'fastestFingers' && playerScore.isFastest) {
+					photos.fastestFingers.push(photoUrl);
+				}
+
+				// Most featured: rounds where this player's photo was shown
+				if (superlative.type === 'mostFeatured' && round.photoOwnerId === playerId) {
+					photos.mostFeatured.push(photoUrl);
+				}
+
+				// Sharpshooter: rounds where this player guessed correctly
+				if (superlative.type === 'sharpshooter' && playerScore.correctGuess) {
+					photos.sharpshooter.push(photoUrl);
+				}
+
+				// Lucky guesser: also correctly guessed photos
+				if (superlative.type === 'luckyGuesser' && playerScore.correctGuess) {
+					photos.luckyGuesser.push(photoUrl);
+				}
+			}
+		}
+
+		return photos;
+	});
+
+	// Get photos for a specific superlative type (max 4)
+	function getSuperlativePhotos(type: string): string[] {
+		return (superlativePhotos[type] || []).slice(0, 4);
+	}
+
 	onMount(() => {
 		// Trigger confetti animation
 		showConfetti = true;
-
-		// Clean up confetti after animation
 		setTimeout(() => {
 			showConfetti = false;
 		}, 5000);
+
+		// Start slideshow
+		if (allGamePhotos.length > 0) {
+			slideInterval = setInterval(() => {
+				currentSlideIndex = (currentSlideIndex + 1) % allGamePhotos.length;
+			}, 4000);
+		}
+	});
+
+	onDestroy(() => {
+		if (slideInterval) {
+			clearInterval(slideInterval);
+		}
 	});
 </script>
 
@@ -114,11 +190,33 @@
 			<div class="superlatives-grid">
 				{#each results.superlatives as superlative}
 					{@const player = getPlayer(superlative.playerId)}
+					{@const photos = getSuperlativePhotos(superlative.type)}
 					<div class="superlative-card">
 						<div class="superlative-emoji">{player?.emoji}</div>
 						<div class="superlative-label">{superlative.label}</div>
 						<div class="superlative-name">{player?.name}</div>
 						<div class="superlative-value">{superlative.value}</div>
+						{#if photos.length > 0}
+							<div class="superlative-photos">
+								{#each photos as photoUrl}
+									<div class="superlative-photo">
+										<img src={photoUrl} alt="" />
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				{/each}
+			</div>
+		</section>
+	{/if}
+
+	{#if allGamePhotos.length > 0}
+		<section class="slideshow-section">
+			<div class="slideshow-container">
+				{#each allGamePhotos as photo, index (photo.id)}
+					<div class="slide" class:active={index === currentSlideIndex}>
+						<img src={photo.url} alt="" />
 					</div>
 				{/each}
 			</div>
@@ -128,11 +226,11 @@
 	<footer class="footer">
 		{#if isHost}
 			<Button size="lg" fullWidth onclick={onRematch}>Rematch</Button>
-			<Button variant="secondary" fullWidth onclick={onNewGame}>New game</Button>
+			<Button size="lg" variant="secondary" fullWidth onclick={onNewGame}>New game</Button>
 		{:else}
 			<div class="waiting-message">Waiting for host...</div>
 		{/if}
-		<Button variant="ghost" onclick={onLeaveGame}>Leave game</Button>
+		<Button size="lg" variant="ghost" fullWidth onclick={onLeaveGame}>Leave game</Button>
 	</footer>
 </div>
 
@@ -340,6 +438,58 @@
 	.superlative-value {
 		font-size: var(--font-size-sm);
 		color: var(--color-primary);
+	}
+
+	.superlative-photos {
+		display: flex;
+		gap: 4px;
+		justify-content: center;
+		margin-top: var(--space-sm);
+		flex-wrap: wrap;
+	}
+
+	.superlative-photo {
+		width: 36px;
+		height: 36px;
+		border-radius: 4px;
+		overflow: hidden;
+	}
+
+	.superlative-photo img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.slideshow-section {
+		margin-top: var(--space-lg);
+	}
+
+	.slideshow-container {
+		position: relative;
+		width: 100%;
+		height: 200px;
+		border-radius: var(--radius-lg);
+		overflow: hidden;
+		background: var(--color-surface);
+	}
+
+	.slide {
+		position: absolute;
+		inset: 0;
+		opacity: 0;
+		transition: opacity 400ms ease-in-out;
+	}
+
+	.slide.active {
+		opacity: 1;
+	}
+
+	.slide img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		background: var(--color-surface);
 	}
 
 	.footer {

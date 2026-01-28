@@ -18,6 +18,7 @@
 		onConnectPhotos: () => void;
 		onStartGame: () => void;
 		onLeaveGame: () => void;
+		onKickPlayer?: (_playerId: string) => void;
 	}
 
 	let {
@@ -35,6 +36,7 @@
 		onConnectPhotos,
 		onStartGame,
 		onLeaveGame,
+		onKickPlayer,
 	}: Props = $props();
 
 	let showSettings = $state(false);
@@ -122,7 +124,12 @@
 		<h2>Players ({players.length}/8)</h2>
 		<div class="players-list">
 			{#each players as player (player.id)}
-				<PlayerCard {player} isCurrentPlayer={player.id === myPlayerId} />
+				<PlayerCard
+					{player}
+					isCurrentPlayer={player.id === myPlayerId}
+					canKick={isHost && !player.isHost}
+					onKick={onKickPlayer ? () => onKickPlayer(player.id) : undefined}
+				/>
 			{/each}
 		</div>
 	</section>

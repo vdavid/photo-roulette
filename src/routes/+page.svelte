@@ -2,7 +2,7 @@
 	import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/public';
 	import { Landing, Lobby, Game, Results, Final } from '$lib/views';
 	import { gameStore } from '$lib/stores/game.svelte.js';
-	import { pickPhotos, ensureValidToken, openBlankPickerWindow } from '$lib/photos';
+	import { pickPhotos, ensureValidToken, openBlankPickerWindow, isTestPlayer } from '$lib/photos';
 	import { Spinner } from '$lib/components';
 
 	// Set up logging for debugging
@@ -33,6 +33,16 @@
 	}
 
 	async function handleConnectPhotos() {
+		// For test players (AAA, BBB, etc.), skip the Google Photos flow entirely
+		if (isTestPlayer(gameStore.myName)) {
+			// Just call connectPhotos - it will detect the test player and generate photos
+			await gameStore.connectPhotos(async () => {
+				// This won't be called for test players, but we need to provide it
+				return { photos: [] };
+			});
+			return;
+		}
+
 		// IMPORTANT: Open the picker window IMMEDIATELY during user gesture
 		// This prevents popup blockers from blocking it after async operations
 		const pickerWindow = openBlankPickerWindow();
@@ -128,6 +138,7 @@
 		onConnectPhotos={handleConnectPhotos}
 		onStartGame={handleStartGame}
 		onLeaveGame={handleLeaveGame}
+		onKickPlayer={(playerId) => gameStore.kickPlayer(playerId)}
 	/>
 {:else if gameStore.phase === 'playing' && gameStore.currentRound}
 	<Game
@@ -148,12 +159,15 @@
 		playerScores={gameStore.playerScores}
 		currentRoundNumber={gameStore.roundResults.length}
 		totalRounds={gameStore.settings.totalRounds}
+		photoUrl={gameStore.resultsPhotoUrl}
 	/>
 {:else if gameStore.phase === 'final' && gameStore.finalResults}
 	<Final
 		results={gameStore.finalResults}
 		players={gameStore.players}
 		isHost={gameStore.isHost}
+		roundResults={gameStore.roundResults}
+		gamePhotoUrls={gameStore.gamePhotoUrls}
 		onRematch={handleRematch}
 		onNewGame={handleNewGame}
 		onLeaveGame={handleLeaveGame}

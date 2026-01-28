@@ -24,6 +24,7 @@ import {
 import {
 	DEFAULT_GAME_SETTINGS,
 	ROUND_RESULT_DISPLAY_MS,
+	ROUND_SYNC_BUFFER_MS,
 	ANIMAL_EMOJIS,
 } from '$lib/game/constants.js';
 import {
@@ -34,11 +35,10 @@ import {
 	transitionToLobby,
 	transitionToFinal,
 	allPlayersReady,
-	transitionToNewGame,
 } from '$lib/game/state.js';
 import {
 	createPhotoPool,
-	selectRandomPhoto,
+	selectFairPhoto,
 	createRound,
 	addGuess,
 	completeRound,
@@ -113,6 +113,7 @@ function createGameStore() {
 	let playerNetwork: PlayerNetwork | null = null;
 	let roundTimer: ReturnType<typeof setTimeout> | null = null;
 	let resultsTimer: ReturnType<typeof setTimeout> | null = null;
+	let roundStartSyncTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// Logger (can be overridden)
 	let log: Logger = defaultLogger;
@@ -120,6 +121,8 @@ function createGameStore() {
 	// Internal game state (authoritative on host)
 	let internalState: GameState = createInitialState();
 	let photos: Photo[] = [];
+	// Track how many times each player's photo has been featured (for fair distribution)
+	let featureCounts: Map<PlayerId, number> = new Map();
 
 	// Reactive store state
 	let isHost = $state(false);
@@ -140,6 +143,7 @@ function createGameStore() {
 	let finalResults = $state<FinalResults | null>(null);
 
 	let currentImageData = $state<string | null>(null);
+	let resultsPhotoData = $state<string | null>(null); // Photo shown on results screen
 	let myGuess = $state<PlayerId | null>(null);
 	let guessCount = $state(0);
 	let timerStartTime = $state<number | null>(null);
@@ -149,6 +153,9 @@ function createGameStore() {
 	let photoCount = $state(0);
 	let isConnectingPhotos = $state(false);
 	let photoError = $state<string | null>(null);
+
+	// Track photos shown during the game (for final screen thumbnails)
+	let gamePhotoUrls = $state<Map<string, string>>(new Map()); // photoId -> data URL
 
 	// Sync state from internal to reactive
 	function syncState() {
@@ -383,26 +390,46 @@ function createGameStore() {
 			phase = 'playing';
 			players = playerList;
 			settings = gameSettings;
+			// Reset for new game / rematch
+			roundResults = [];
+			playerScores = new Map();
+			finalResults = null;
+			gamePhotoUrls = new Map();
 		});
 
 		playerNetwork.on('roundStart', (roundNumber, imageData, _photoId, startTime) => {
-			log('info', 'Round started', { roundNumber });
-			currentImageData = imageData;
-			timerStartTime = startTime;
-			timerEndTime = startTime + settings.timerSeconds * 1000;
-			myGuess = null;
-			guessCount = 0;
-			currentRound = {
-				roundNumber,
-				photoId: _photoId,
-				photoOwnerId: '', // Not known to players
-				guesses: [],
-				startTime,
-			};
+			log('info', 'Round start received', { roundNumber, startTime });
+
+			// Calculate delay until target start time (startTime is the synchronized target)
+			const now = Date.now();
+			const delay = Math.max(0, startTime - now);
+
+			// Schedule the round to start at the target time
+			if (roundStartSyncTimer) clearTimeout(roundStartSyncTimer);
+			roundStartSyncTimer = setTimeout(() => {
+				log('info', 'Round starting', { roundNumber });
+				phase = 'playing';
+				resultsPhotoData = null; // Clear previous round's photo
+				currentImageData = imageData;
+				// Save photo for final screen thumbnails
+				gamePhotoUrls.set(_photoId, createDataUrl(imageData));
+				timerStartTime = startTime;
+				timerEndTime = startTime + settings.timerSeconds * 1000;
+				myGuess = null;
+				guessCount = 0;
+				currentRound = {
+					roundNumber,
+					photoId: _photoId,
+					photoOwnerId: '', // Not known to players
+					guesses: [],
+					startTime,
+				};
+			}, delay);
 		});
 
 		playerNetwork.on('roundEnd', (result, scores) => {
 			log('info', 'Round ended', { roundNumber: result.roundNumber });
+			resultsPhotoData = currentImageData; // Save for results display
 			phase = 'results';
 			roundResults = [...roundResults, result];
 			playerScores = scores;
@@ -551,6 +578,15 @@ function createGameStore() {
 			internalState.playerScores.set(player.id, createEmptyPlayerScore(player.id));
 		}
 
+		// Initialize feature counts for fair photo distribution
+		featureCounts = new Map();
+		for (const player of internalState.players) {
+			featureCounts.set(player.id, 0);
+		}
+
+		// Clear game photos from previous game
+		gamePhotoUrls = new Map();
+
 		// Transition to playing
 		internalState.phase = 'playing';
 
@@ -566,8 +602,8 @@ function createGameStore() {
 
 		log('info', 'Starting next round');
 
-		// Select photo
-		const selection = selectRandomPhoto(internalState.photoPool);
+		// Select photo fairly (equal distribution among players)
+		const selection = selectFairPhoto(internalState.photoPool, featureCounts);
 		if (!selection) {
 			log('error', 'No photos available');
 			return;
@@ -576,35 +612,51 @@ function createGameStore() {
 		internalState.photoPool = selection.updatedPool;
 		const photo = selection.photo;
 
+		// Update feature count for this player
+		const currentCount = featureCounts.get(photo.ownerId) || 0;
+		featureCounts.set(photo.ownerId, currentCount + 1);
+		log('debug', 'Feature counts updated', { ownerId: photo.ownerId, count: currentCount + 1 });
+
 		// Ensure photo has imageData
 		if (!photo.imageData) {
 			log('error', 'Photo missing imageData', { photoId: photo.id });
 			return;
 		}
 
-		// Create round
-		const startTime = Date.now();
-		const round = createRound(internalState.roundResults.length + 1, photo, startTime);
-		internalState.currentRound = round;
+		// Compute synchronized start time (in the future to account for network latency)
+		const targetStartTime = Date.now() + ROUND_SYNC_BUFFER_MS;
+		const roundNumber = internalState.roundResults.length + 1;
 
-		// Set local state - use imageData instead of URL
-		currentImageData = photo.imageData;
-		currentRound = round;
-		timerStartTime = round.startTime;
-		timerEndTime = round.startTime + internalState.settings.timerSeconds * 1000;
-		myGuess = null;
-		guessCount = 0;
+		// Broadcast round start FIRST so peers receive it before we start locally
+		hostNetwork?.broadcastRoundStart(roundNumber, photo.imageData, photo.id, targetStartTime);
 
-		// Broadcast round start with imageData
-		hostNetwork?.broadcastRoundStart(round.roundNumber, photo.imageData, photo.id, round.startTime);
+		// Schedule the round to start at the target time for host too
+		if (roundStartSyncTimer) clearTimeout(roundStartSyncTimer);
+		roundStartSyncTimer = setTimeout(() => {
+			// Create round with the target start time
+			const round = createRound(roundNumber, photo, targetStartTime);
+			internalState.currentRound = round;
 
-		syncState();
+			// Set local state - use imageData instead of URL
+			resultsPhotoData = null; // Clear previous round's photo
+			currentImageData = photo.imageData;
+			// Save photo for final screen thumbnails
+			gamePhotoUrls.set(photo.id, createDataUrl(photo.imageData));
+			currentRound = round;
+			timerStartTime = round.startTime;
+			timerEndTime = round.startTime + internalState.settings.timerSeconds * 1000;
+			myGuess = null;
+			guessCount = 0;
 
-		// Start timer
-		if (roundTimer) clearTimeout(roundTimer);
-		roundTimer = setTimeout(() => {
-			endRound();
-		}, internalState.settings.timerSeconds * 1000);
+			syncState();
+
+			// Start the round end timer based on the target end time
+			if (roundTimer) clearTimeout(roundTimer);
+			const timeUntilEnd = timerEndTime - Date.now();
+			roundTimer = setTimeout(() => {
+				endRound();
+			}, timeUntilEnd);
+		}, ROUND_SYNC_BUFFER_MS);
 	}
 
 	function submitGuess(guessedOwnerId: PlayerId) {
@@ -668,6 +720,9 @@ function createGameStore() {
 				});
 			}
 		}
+
+		// Save photo for results display before clearing
+		resultsPhotoData = currentImageData;
 
 		// Transition to results
 		internalState.phase = 'results';
@@ -742,6 +797,15 @@ function createGameStore() {
 			internalState.playerScores.set(player.id, createEmptyPlayerScore(player.id));
 		}
 
+		// Reset feature counts for fair distribution
+		featureCounts = new Map();
+		for (const player of internalState.players) {
+			featureCounts.set(player.id, 0);
+		}
+
+		// Clear game photos for new game
+		gamePhotoUrls = new Map();
+
 		finalResults = null;
 		roundResults = [];
 		playerScores = new Map();
@@ -750,19 +814,67 @@ function createGameStore() {
 		startNextRoundInternal();
 	}
 
-	function newGame() {
+	async function newGame() {
 		if (!isHost) return;
 
-		log('info', 'Starting new game');
+		log('info', 'Starting new game - kicking all players and creating new room');
 
-		internalState = transitionToNewGame(internalState);
+		// Kick all non-host players
+		for (const player of internalState.players) {
+			if (!player.isHost) {
+				hostNetwork?.kickPlayer(player.id, 'Host started a new game');
+			}
+		}
+
+		// Close the old room
+		hostNetwork?.closeRoom();
+		hostNetwork = null;
+
+		// Reset all state
+		internalState = createInitialState();
 		finalResults = null;
 		roundResults = [];
 		playerScores = new Map();
 		currentRound = null;
 		currentImageData = null;
+		resultsPhotoData = null;
+		photos = [];
+		featureCounts = new Map();
+		gamePhotoUrls = new Map();
+		hasConnectedPhotos = false;
+		photoCount = 0;
 
-		syncState();
+		// Create a new host player (keep the same name/emoji)
+		const hostPlayerId = crypto.randomUUID();
+		myPlayerId = hostPlayerId;
+
+		const hostPlayer: Player = {
+			id: hostPlayerId,
+			name: myName,
+			emoji: myEmoji,
+			photoIds: [],
+			isHost: true,
+			isReady: false,
+			isConnected: true,
+		};
+
+		internalState = transitionToLobby(internalState, hostPlayer);
+
+		// Create new host network with new room code
+		hostNetwork = new HostNetwork(hostPlayerId);
+		setupHostEvents();
+
+		try {
+			const code = await hostNetwork.createRoom();
+			roomCode = code;
+			connectionStatus = 'connected';
+			syncState();
+			log('info', 'New room created', { roomCode: code });
+		} catch (error) {
+			connectionStatus = 'error';
+			connectionError = error instanceof Error ? error.message : 'Failed to create room';
+			log('error', 'Failed to create new room', { error });
+		}
 	}
 
 	function leaveGame() {
@@ -770,6 +882,7 @@ function createGameStore() {
 
 		if (roundTimer) clearTimeout(roundTimer);
 		if (resultsTimer) clearTimeout(resultsTimer);
+		if (roundStartSyncTimer) clearTimeout(roundStartSyncTimer);
 
 		if (hostNetwork) {
 			hostNetwork.closeRoom();
@@ -794,6 +907,8 @@ function createGameStore() {
 		playerScores = new Map();
 		finalResults = null;
 		currentImageData = null;
+		resultsPhotoData = null;
+		gamePhotoUrls = new Map();
 		myGuess = null;
 		guessCount = 0;
 		timerStartTime = null;
@@ -847,6 +962,9 @@ function createGameStore() {
 		get roundResults() {
 			return roundResults;
 		},
+		get gamePhotoUrls() {
+			return gamePhotoUrls;
+		},
 		get playerScores() {
 			return playerScores;
 		},
@@ -856,6 +974,10 @@ function createGameStore() {
 		get currentPhotoUrl() {
 			// Return as data URL for use in <img src="">
 			return currentImageData ? createDataUrl(currentImageData) : null;
+		},
+		get resultsPhotoUrl() {
+			// Return as data URL for results screen
+			return resultsPhotoData ? createDataUrl(resultsPhotoData) : null;
 		},
 		get myGuess() {
 			return myGuess;
@@ -901,6 +1023,27 @@ function createGameStore() {
 		rematch,
 		newGame,
 		leaveGame,
+		kickPlayer: (playerId: PlayerId) => {
+			if (!isHost) return;
+			log('info', 'Kicking player', { playerId });
+
+			// Send kick message and disconnect
+			hostNetwork?.kickPlayer(playerId, 'Kicked by host');
+
+			// Remove from internal state
+			const playerIndex = internalState.players.findIndex((p) => p.id === playerId);
+			if (playerIndex !== -1) {
+				internalState.players.splice(playerIndex, 1);
+			}
+
+			// Remove their photos from the pool
+			photos = photos.filter((p) => p.ownerId !== playerId);
+
+			// Broadcast player left
+			hostNetwork?.broadcastPlayerLeft(playerId);
+
+			syncState();
+		},
 		setLogger,
 	};
 }

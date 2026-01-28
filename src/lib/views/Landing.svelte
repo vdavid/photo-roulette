@@ -1,6 +1,10 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { Button, Card, Input, EmojiPicker } from '$lib/components';
 	import { ANIMAL_EMOJIS } from '$lib/game/constants.js';
+
+	const STORAGE_KEY_NAME = 'photoRoulette.playerName';
+	const STORAGE_KEY_EMOJI = 'photoRoulette.playerEmoji';
 
 	interface Props {
 		onHostGame: (_name: string, _emoji: string) => Promise<void>;
@@ -9,9 +13,34 @@
 
 	let { onHostGame, onJoinGame }: Props = $props();
 
+	// Load saved values from localStorage, or use defaults
+	function getInitialName(): string {
+		if (browser) {
+			return localStorage.getItem(STORAGE_KEY_NAME) || '';
+		}
+		return '';
+	}
+
+	function getInitialEmoji(): string {
+		if (browser) {
+			const saved = localStorage.getItem(STORAGE_KEY_EMOJI);
+			if (saved && ANIMAL_EMOJIS.includes(saved)) {
+				return saved;
+			}
+		}
+		return ANIMAL_EMOJIS[Math.floor(Math.random() * ANIMAL_EMOJIS.length)];
+	}
+
+	function saveToLocalStorage(playerName: string, playerEmoji: string) {
+		if (browser) {
+			localStorage.setItem(STORAGE_KEY_NAME, playerName);
+			localStorage.setItem(STORAGE_KEY_EMOJI, playerEmoji);
+		}
+	}
+
 	let mode = $state<'select' | 'host' | 'join'>('select');
-	let name = $state('');
-	let emoji = $state(ANIMAL_EMOJIS[Math.floor(Math.random() * ANIMAL_EMOJIS.length)]);
+	let name = $state(getInitialName());
+	let emoji = $state(getInitialEmoji());
 	let roomCode = $state('');
 	let isLoading = $state(false);
 	let error = $state('');
@@ -26,6 +55,7 @@
 		error = '';
 
 		try {
+			saveToLocalStorage(name.trim(), emoji);
 			await onHostGame(name.trim(), emoji);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to create game';
@@ -48,6 +78,7 @@
 		error = '';
 
 		try {
+			saveToLocalStorage(name.trim(), emoji);
 			await onJoinGame(roomCode.trim().toUpperCase(), name.trim(), emoji);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to join game';

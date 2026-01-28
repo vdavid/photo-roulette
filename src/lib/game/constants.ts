@@ -29,6 +29,9 @@ export const BLUR_REVEAL_DURATION_MS = 3000;
 /** Duration to show round results before auto-advancing in milliseconds */
 export const ROUND_RESULT_DISPLAY_MS = 4500;
 
+/** Buffer time in ms to sync round start across all players (accounts for network latency) */
+export const ROUND_SYNC_BUFFER_MS = 200;
+
 // === Rounds ===
 
 /** Available round count options */

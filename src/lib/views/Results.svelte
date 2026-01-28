@@ -7,9 +7,11 @@
 		playerScores: Map<PlayerId, PlayerScore>;
 		currentRoundNumber: number;
 		totalRounds: number;
+		photoUrl: string | null;
 	}
 
-	let { result, players, playerScores, currentRoundNumber, totalRounds }: Props = $props();
+	let { result, players, playerScores, currentRoundNumber, totalRounds, photoUrl }: Props =
+		$props();
 
 	const photoOwner = $derived(players.find((p) => p.id === result.photoOwnerId));
 
@@ -45,8 +47,15 @@
 	</header>
 
 	<div class="photo-owner">
-		<span class="owner-emoji">{photoOwner?.emoji}</span>
-		<span class="owner-text">It was <strong>{photoOwner?.name}</strong>'s photo!</span>
+		{#if photoUrl}
+			<div class="photo-thumbnail">
+				<img src={photoUrl} alt="Round photo" />
+			</div>
+		{/if}
+		<div class="owner-info">
+			<span class="owner-emoji">{photoOwner?.emoji}</span>
+			<span class="owner-text">It was <strong>{photoOwner?.name}</strong>'s photo!</span>
+		</div>
 	</div>
 
 	<section class="guesses-section">
@@ -160,6 +169,7 @@
 
 	.photo-owner {
 		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		gap: var(--space-md);
@@ -167,6 +177,26 @@
 		background: var(--color-secondary);
 		border-radius: var(--radius-lg);
 		text-align: center;
+	}
+
+	.photo-thumbnail {
+		width: 120px;
+		height: 120px;
+		border-radius: var(--radius-md);
+		overflow: hidden;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	}
+
+	.photo-thumbnail img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.owner-info {
+		display: flex;
+		align-items: center;
+		gap: var(--space-md);
 	}
 
 	.owner-emoji {
