@@ -79,10 +79,7 @@ export async function buildAuthorizationUrl(config: OAuthConfig): Promise<string
 /**
  * Exchange authorization code for tokens
  */
-export async function exchangeCodeForToken(
-	code: string,
-	config: OAuthConfig
-): Promise<OAuthToken> {
+export async function exchangeCodeForToken(code: string, config: OAuthConfig): Promise<OAuthToken> {
 	const codeVerifier = sessionStorage.getItem(CODE_VERIFIER_STORAGE_KEY);
 	if (!codeVerifier) {
 		throw new Error('Code verifier not found. Please restart the authorization flow.');

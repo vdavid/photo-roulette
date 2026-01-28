@@ -12,7 +12,8 @@ export const OAUTH_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 export const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 /** Required OAuth scope for the Picker API */
-export const PICKER_OAUTH_SCOPE = 'https://www.googleapis.com/auth/photospicker.mediaitems.readonly';
+export const PICKER_OAUTH_SCOPE =
+	'https://www.googleapis.com/auth/photospicker.mediaitems.readonly';
 
 /** Default max items a user can pick */
 export const DEFAULT_MAX_PICK_COUNT = 50;

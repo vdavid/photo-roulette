@@ -1,2 +1,178 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<script lang="ts">
+	import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/public';
+	import { Landing, Lobby, Game, Results, Final } from '$lib/views';
+	import { gameStore } from '$lib/stores/game.svelte.js';
+	import { pickPhotos, buildAuthorizationUrl, getPhotosConfig, hasValidToken } from '$lib/photos';
+	import { Spinner } from '$lib/components';
+
+	// Set up logging for debugging
+	gameStore.setLogger((level, message, data) => {
+		const timestamp = new Date().toISOString();
+		const prefix = `[${timestamp}] [GAME] [${level.toUpperCase()}]`;
+		if (data !== undefined) {
+			console[level](`${prefix} ${message}`, data);
+		} else {
+			console[level](`${prefix} ${message}`);
+		}
+	});
+
+	async function handleHostGame(name: string, emoji: string) {
+		await gameStore.hostGame(name, emoji);
+	}
+
+	async function handleJoinGame(code: string, name: string, emoji: string) {
+		await gameStore.joinGame(code, name, emoji);
+	}
+
+	function handleUpdateName(name: string, emoji: string) {
+		gameStore.updateMyInfo(name, emoji);
+	}
+
+	function handleUpdateSettings(settings: typeof gameStore.settings) {
+		gameStore.updateGameSettings(settings);
+	}
+
+	async function handleConnectPhotos() {
+		// Check if we have a valid OAuth token
+		if (!hasValidToken()) {
+			// Need to authenticate first - redirect to OAuth
+			const config = getPhotosConfig(PUBLIC_GOOGLE_CLIENT_ID, window.location.origin);
+			const authUrl = await buildAuthorizationUrl(config);
+
+			// Store where to return after auth
+			sessionStorage.setItem('photo-roulette-auth-return', window.location.pathname);
+
+			// Redirect to Google OAuth
+			window.location.href = authUrl;
+			return;
+		}
+
+		// We have a token, proceed with photo picking
+		await gameStore.connectPhotos(async () => {
+			const result = await pickPhotos(50);
+			return result;
+		});
+	}
+
+	function handleStartGame() {
+		gameStore.startGame();
+	}
+
+	function handleGuess(playerId: string) {
+		gameStore.submitGuess(playerId);
+	}
+
+	function handleRematch() {
+		gameStore.rematch();
+	}
+
+	function handleNewGame() {
+		gameStore.newGame();
+	}
+
+	function handleLeaveGame() {
+		gameStore.leaveGame();
+	}
+
+	// Get the latest round result for the results view
+	const latestRoundResult = $derived(
+		gameStore.roundResults.length > 0
+			? gameStore.roundResults[gameStore.roundResults.length - 1]
+			: null
+	);
+
+	// Compute page title
+	const pageTitle = $derived.by(() => {
+		switch (gameStore.phase) {
+			case 'lobby':
+				return `Lobby - ${gameStore.roomCode} | Photo Roulette`;
+			case 'playing':
+				return `Round ${gameStore.currentRound?.roundNumber || ''} | Photo Roulette`;
+			case 'results':
+				return 'Results | Photo Roulette';
+			case 'final':
+				return 'Game Over! | Photo Roulette';
+			default:
+				return 'Photo Roulette';
+		}
+	});
+</script>
+
+<svelte:head>
+	<title>{pageTitle}</title>
+</svelte:head>
+
+{#if gameStore.connectionStatus === 'connecting'}
+	<div class="loading-screen">
+		<Spinner size="lg" />
+		<p>Connecting...</p>
+	</div>
+{:else if gameStore.phase === 'landing'}
+	<Landing onHostGame={handleHostGame} onJoinGame={handleJoinGame} />
+{:else if gameStore.phase === 'lobby'}
+	<Lobby
+		roomCode={gameStore.roomCode || ''}
+		players={gameStore.players}
+		settings={gameStore.settings}
+		myPlayerId={gameStore.myPlayerId || ''}
+		isHost={gameStore.isHost}
+		hasConnectedPhotos={gameStore.hasConnectedPhotos}
+		photoCount={gameStore.photoCount}
+		isConnectingPhotos={gameStore.isConnectingPhotos}
+		canStartGame={gameStore.canStartGame}
+		onUpdateName={handleUpdateName}
+		onUpdateSettings={handleUpdateSettings}
+		onConnectPhotos={handleConnectPhotos}
+		onStartGame={handleStartGame}
+		onLeaveGame={handleLeaveGame}
+	/>
+{:else if gameStore.phase === 'playing' && gameStore.currentRound}
+	<Game
+		round={gameStore.currentRound}
+		photoUrl={gameStore.currentPhotoUrl}
+		players={gameStore.players}
+		myGuess={gameStore.myGuess}
+		guessCount={gameStore.guessCount}
+		timerStartTime={gameStore.timerStartTime || Date.now()}
+		timerEndTime={gameStore.timerEndTime || Date.now() + 10000}
+		totalRounds={gameStore.settings.totalRounds}
+		onGuess={handleGuess}
+	/>
+{:else if gameStore.phase === 'results' && latestRoundResult}
+	<Results
+		result={latestRoundResult}
+		players={gameStore.players}
+		playerScores={gameStore.playerScores}
+		currentRoundNumber={gameStore.roundResults.length}
+		totalRounds={gameStore.settings.totalRounds}
+	/>
+{:else if gameStore.phase === 'final' && gameStore.finalResults}
+	<Final
+		results={gameStore.finalResults}
+		players={gameStore.players}
+		isHost={gameStore.isHost}
+		onRematch={handleRematch}
+		onNewGame={handleNewGame}
+		onLeaveGame={handleLeaveGame}
+	/>
+{:else}
+	<div class="loading-screen">
+		<Spinner size="lg" />
+		<p>Loading...</p>
+	</div>
+{/if}
+
+<style>
+	.loading-screen {
+		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-md);
+	}
+
+	.loading-screen p {
+		color: var(--color-text-muted);
+	}
+</style>

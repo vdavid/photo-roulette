@@ -3,11 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-	createOAuthConfig,
-	parseCallbackParams,
-	isTokenValid,
-} from './oauth.js';
+import { createOAuthConfig, parseCallbackParams, isTokenValid } from './oauth.js';
 import { PICKER_OAUTH_SCOPE, TOKEN_REFRESH_BUFFER_MS } from './constants.js';
 import type { OAuthToken } from './types.js';
 
@@ -84,8 +80,7 @@ describe('parseCallbackParams', () => {
 	});
 
 	it('should handle URL-encoded parameters', () => {
-		const url =
-			'http://localhost:5173/auth/callback?code=4%2F0test&state=abc%3D%3D123';
+		const url = 'http://localhost:5173/auth/callback?code=4%2F0test&state=abc%3D%3D123';
 		const result = parseCallbackParams(url);
 
 		expect(result).toEqual({
