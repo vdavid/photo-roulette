@@ -1,0 +1,11 @@
+node_modules
+build
+.git
+.gitignore
+*.md
+.svelte-kit
+.env*
+.DS_Store
+coverage
+test-results
+playwright-report

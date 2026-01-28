@@ -84,6 +84,19 @@ No Caddy restart needed — it serves files directly from `build/`.
 
 2. Build and push to `gh-pages` branch, or use a GitHub Action.
 
+## Docker
+
+Build and run the container:
+
+```bash
+docker build -t photo-roulette .
+docker run -p 8080:80 photo-roulette
+```
+
+The app will be available at `http://localhost:8080`.
+
+For production with HTTPS, run behind a reverse proxy (Caddy, Traefik, etc.) or use Docker Compose with your preferred setup.
+
 ## Vercel / Netlify / Cloudflare Pages
 
 These platforms work automatically. Just connect your repo and deploy.
