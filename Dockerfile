@@ -15,6 +15,10 @@ RUN pnpm install --frozen-lockfile
 # Copy source files
 COPY . .
 
+# Build arg for Google OAuth (required at build time for SvelteKit static env)
+ARG PUBLIC_GOOGLE_CLIENT_ID
+ENV PUBLIC_GOOGLE_CLIENT_ID=$PUBLIC_GOOGLE_CLIENT_ID
+
 # Build the static site
 RUN pnpm build
 

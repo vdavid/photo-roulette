@@ -86,34 +86,55 @@ No Caddy restart needed — it serves files directly from `build/`.
 
 ## Docker
 
-### 1. Clone and build
+### 1. Clone the repo
 
 ```bash
 # Clone to /opt (or wherever you prefer)
 sudo mkdir -p /opt/photo-roulette
 sudo chown $USER:$USER /opt/photo-roulette
 git clone https://github.com/vdavid/photo-roulette.git /opt/photo-roulette
-
-# Build the Docker image
-cd /opt/photo-roulette
-docker build -t photo-roulette .
 ```
 
-### 2. Run the container
+### 2. Set up a Docker network
+
+The container needs to be on the same Docker network as your reverse proxy (Caddy, Traefik, etc.).
+
+If you don't have one yet, create it:
 
 ```bash
-docker run -d --name photo-roulette -p 8080:80 --restart unless-stopped photo-roulette
+docker network create proxy-net
 ```
 
-The app will be available at `http://localhost:8080`.
+If you already have a network for your reverse proxy, use that instead in the following steps.
 
-### 3. Configure Caddy for HTTPS
+### 3. Build the Docker image
+
+```bash
+cd /opt/photo-roulette
+docker build -t photo-roulette \
+  --build-arg PUBLIC_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com \
+  .
+```
+
+Get your Google Client ID from the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+
+### 4. Run the container
+
+```bash
+docker run -d \
+  --name photo-roulette \
+  --network proxy-net \
+  --restart unless-stopped \
+  photo-roulette
+```
+
+### 5. Configure Caddy for HTTPS
 
 Add to your Caddyfile:
 
 ```caddy
 photos.yourdomain.com {
-    reverse_proxy localhost:8080
+    reverse_proxy photo-roulette:80
 }
 ```
 
@@ -123,16 +144,22 @@ Then reload Caddy:
 sudo systemctl reload caddy
 ```
 
-### 4. Updating
+### 6. Updating
 
 To deploy updates:
 
 ```bash
 cd /opt/photo-roulette
 git pull
-docker build -t photo-roulette .
+docker build -t photo-roulette \
+  --build-arg PUBLIC_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com \
+  .
 docker stop photo-roulette && docker rm photo-roulette
-docker run -d --name photo-roulette -p 8080:80 --restart unless-stopped photo-roulette
+docker run -d \
+  --name photo-roulette \
+  --network proxy-net \
+  --restart unless-stopped \
+  photo-roulette
 ```
 
 ## Vercel / Netlify / Cloudflare Pages
