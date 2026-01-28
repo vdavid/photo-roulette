@@ -101,21 +101,18 @@
 		</svg>
 
 		<div class="photo-frame">
-			{#if !imageLoaded}
-				<div class="photo-loading">
-					<Spinner size="lg" />
-				</div>
-			{/if}
-
 			{#if photoUrl}
 				<img
 					src={photoUrl}
 					alt="Guess whose photo this is"
-					class="photo"
-					class:loaded={imageLoaded}
+					class="photo {imageLoaded ? 'loaded' : ''}"
 					style="filter: blur({blurAmount}px)"
 					onload={handleImageLoad}
 				/>
+			{:else}
+				<div class="photo-loading">
+					<Spinner size="lg" />
+				</div>
 			{/if}
 		</div>
 	</div>
@@ -236,7 +233,7 @@
 		background: var(--color-surface);
 	}
 
-	.photo {
+	.photo-frame .photo {
 		width: 100%;
 		height: 100%;
 		object-fit: contain;
@@ -248,7 +245,7 @@
 		animation: kenBurns 15s ease-in-out infinite alternate;
 	}
 
-	.photo.loaded {
+	.photo-frame .photo.loaded {
 		opacity: 1;
 	}
 

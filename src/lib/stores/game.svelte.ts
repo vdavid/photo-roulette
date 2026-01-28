@@ -44,6 +44,7 @@ import {
 	completeRound,
 	allPlayersGuessed,
 } from '$lib/game/round.js';
+import { processPickedPhotos, createDataUrl, type ProcessedImage } from '$lib/photos/index.js';
 import { getRankedScores, determineWinner, createEmptyPlayerScore } from '$lib/game/scoring.js';
 import { calculateSuperlatives } from '$lib/game/superlatives.js';
 
@@ -87,7 +88,7 @@ interface GameStore {
 	finalResults: FinalResults | null;
 
 	// Round state
-	currentPhotoUrl: string | null;
+	currentImageData: string | null;
 	myGuess: PlayerId | null;
 	guessCount: number;
 	timerStartTime: number | null;
@@ -132,7 +133,7 @@ function createGameStore() {
 	let playerScores = $state<Map<PlayerId, PlayerScore>>(new Map());
 	let finalResults = $state<FinalResults | null>(null);
 
-	let currentPhotoUrl = $state<string | null>(null);
+	let currentImageData = $state<string | null>(null);
 	let myGuess = $state<PlayerId | null>(null);
 	let guessCount = $state(0);
 	let timerStartTime = $state<number | null>(null);
@@ -378,9 +379,9 @@ function createGameStore() {
 			settings = gameSettings;
 		});
 
-		playerNetwork.on('roundStart', (roundNumber, photoUrl, _photoId, startTime) => {
+		playerNetwork.on('roundStart', (roundNumber, imageData, _photoId, startTime) => {
 			log('info', 'Round started', { roundNumber });
-			currentPhotoUrl = photoUrl;
+			currentImageData = imageData;
 			timerStartTime = startTime;
 			timerEndTime = startTime + settings.timerSeconds * 1000;
 			myGuess = null;
@@ -400,7 +401,7 @@ function createGameStore() {
 			roundResults = [...roundResults, result];
 			playerScores = scores;
 			currentRound = null;
-			currentPhotoUrl = null;
+			currentImageData = null;
 		});
 
 		playerNetwork.on('gameEnd', (results) => {
@@ -468,18 +469,36 @@ function createGameStore() {
 		photoError = null;
 
 		try {
+			// Step 1: Pick photos from Google Photos
 			const result = await pickerFn();
-			const pickedPhotos: Photo[] = result.photos.map((p) => ({
-				id: p.id,
+			log('info', 'Photos picked', { count: result.photos.length });
+
+			// Step 2: Process photos - fetch with OAuth, resize, compress to base64
+			const processedImages = await processPickedPhotos(
+				result.photos.map((p) => ({
+					id: p.id,
+					baseUrl: p.baseUrl,
+					mimeType: 'image/jpeg',
+				})),
+				undefined, // Use stored token
+				(current, total, message) => {
+					log('debug', message);
+				}
+			);
+
+			// Step 3: Create Photo objects with imageData
+			const pickedPhotos: Photo[] = processedImages.map((img: ProcessedImage) => ({
+				id: img.id,
 				ownerId: myPlayerId!,
-				baseUrl: p.baseUrl,
+				baseUrl: '', // No longer used, but keep for type compatibility
+				imageData: img.imageData,
 			}));
 
 			photoCount = pickedPhotos.length;
 			hasConnectedPhotos = true;
 			photos = pickedPhotos;
 
-			log('info', 'Photos connected', { count: pickedPhotos.length });
+			log('info', 'Photos processed', { count: pickedPhotos.length });
 
 			if (isHost && myPlayerId) {
 				// Update host's own photos
@@ -490,7 +509,7 @@ function createGameStore() {
 				}
 				syncState();
 			} else if (playerNetwork && myPlayerId) {
-				// Send to host
+				// Send to host (with imageData included)
 				playerNetwork.sendPhotos(pickedPhotos);
 			}
 		} catch (error) {
@@ -543,26 +562,27 @@ function createGameStore() {
 		internalState.photoPool = selection.updatedPool;
 		const photo = selection.photo;
 
+		// Ensure photo has imageData
+		if (!photo.imageData) {
+			log('error', 'Photo missing imageData', { photoId: photo.id });
+			return;
+		}
+
 		// Create round
 		const startTime = Date.now();
 		const round = createRound(internalState.roundResults.length + 1, photo, startTime);
 		internalState.currentRound = round;
 
-		// Set local state
-		currentPhotoUrl = photo.baseUrl;
+		// Set local state - use imageData instead of URL
+		currentImageData = photo.imageData;
 		currentRound = round;
 		timerStartTime = round.startTime;
 		timerEndTime = round.startTime + internalState.settings.timerSeconds * 1000;
 		myGuess = null;
 		guessCount = 0;
 
-		// Broadcast round start
-		hostNetwork?.broadcastRoundStart(
-			round.roundNumber,
-			`${photo.baseUrl}=w1200-h800`,
-			photo.id,
-			round.startTime
-		);
+		// Broadcast round start with imageData
+		hostNetwork?.broadcastRoundStart(round.roundNumber, photo.imageData, photo.id, round.startTime);
 
 		syncState();
 
@@ -726,7 +746,7 @@ function createGameStore() {
 		roundResults = [];
 		playerScores = new Map();
 		currentRound = null;
-		currentPhotoUrl = null;
+		currentImageData = null;
 
 		syncState();
 	}
@@ -759,7 +779,7 @@ function createGameStore() {
 		roundResults = [];
 		playerScores = new Map();
 		finalResults = null;
-		currentPhotoUrl = null;
+		currentImageData = null;
 		myGuess = null;
 		guessCount = 0;
 		timerStartTime = null;
@@ -820,7 +840,8 @@ function createGameStore() {
 			return finalResults;
 		},
 		get currentPhotoUrl() {
-			return currentPhotoUrl;
+			// Return as data URL for use in <img src="">
+			return currentImageData ? createDataUrl(currentImageData) : null;
 		},
 		get myGuess() {
 			return myGuess;

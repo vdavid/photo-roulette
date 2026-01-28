@@ -126,7 +126,8 @@ export interface GameStartingMessage extends BaseMessage {
 export interface RoundStartMessage extends BaseMessage {
 	type: 'round-start';
 	roundNumber: number;
-	photoUrl: string;
+	/** Base64 encoded JPEG image data (without data URL prefix) */
+	imageData: string;
 	photoId: string;
 	startTime: number;
 }

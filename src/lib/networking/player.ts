@@ -64,7 +64,7 @@ export interface PlayerNetworkEvents {
 	/** Game is starting */
 	gameStarting: (players: Player[], settings: GameSettings) => void;
 	/** New round started */
-	roundStart: (roundNumber: number, photoUrl: string, photoId: string, startTime: number) => void;
+	roundStart: (roundNumber: number, imageData: string, photoId: string, startTime: number) => void;
 	/** Round ended with results */
 	roundEnd: (
 		result: RoundResult,
@@ -290,7 +290,7 @@ export class PlayerNetwork {
 				this.emit(
 					'roundStart',
 					roundMsg.roundNumber,
-					roundMsg.photoUrl,
+					roundMsg.imageData,
 					roundMsg.photoId,
 					roundMsg.startTime
 				);

@@ -89,3 +89,21 @@ export {
 
 // Configuration
 export { isPhotosConfigured } from './config.js';
+
+// Authenticated image fetching
+export {
+	fetchAuthenticatedImage,
+	revokeBlobUrl,
+	clearBlobUrlCache,
+} from './authenticated-fetch.js';
+
+// Image processing (for WebRTC transfer)
+export {
+	processPickedPhotos,
+	fetchAndProcessImage,
+	createDataUrl,
+	estimateBase64Size,
+	MAX_IMAGE_SIZE,
+	JPEG_QUALITY,
+	type ProcessedImage,
+} from './image-processor.js';

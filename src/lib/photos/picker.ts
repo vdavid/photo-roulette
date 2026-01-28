@@ -317,7 +317,10 @@ export async function pickPhotos(
 		updateState('creating');
 		callbacks?.onProgress?.('Creating photo picker session...');
 
-		console.log('[PhotoPicker] Creating session with token:', token?.accessToken?.slice(0, 20) + '...');
+		console.log(
+			'[PhotoPicker] Creating session with token:',
+			token?.accessToken?.slice(0, 20) + '...'
+		);
 		const session = await createSession(maxItemCount, token);
 		sessionId = session.id;
 		console.log('[PhotoPicker] Session created:', {
@@ -364,7 +367,10 @@ export async function pickPhotos(
 
 		// Filter to only photos (no videos)
 		const photoItems = mediaItems.filter((item) => item.type === 'PHOTO');
+		console.log('[PhotoPicker] Raw media items from API:', mediaItems);
+		console.log('[PhotoPicker] First item mediaFile:', mediaItems[0]?.mediaFile);
 		const photos = photoItems.map(toPickedPhoto);
+		console.log('[PhotoPicker] Converted photos:', photos);
 
 		// Step 5: Cleanup session
 		try {

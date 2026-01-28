@@ -190,11 +190,11 @@ export class HostNetwork {
 	}
 
 	/**
-	 * Broadcast round start
+	 * Broadcast round start with image data
 	 */
 	broadcastRoundStart(
 		roundNumber: number,
-		photoUrl: string,
+		imageData: string,
 		photoId: string,
 		startTime: number
 	): void {
@@ -202,7 +202,7 @@ export class HostNetwork {
 			...createBaseMessage('round-start', this.hostPlayerId),
 			type: 'round-start',
 			roundNumber,
-			photoUrl,
+			imageData,
 			photoId,
 			startTime,
 		};

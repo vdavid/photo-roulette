@@ -27,6 +27,8 @@ export interface Photo {
 	id: PhotoId;
 	ownerId: PlayerId;
 	baseUrl: string;
+	/** Base64 encoded JPEG image data (without data URL prefix) */
+	imageData?: string;
 }
 
 /** A player's guess for a round */

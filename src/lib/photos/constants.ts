@@ -10,10 +10,10 @@ export const PICKER_OAUTH_SCOPE =
 	'https://www.googleapis.com/auth/photospicker.mediaitems.readonly';
 
 /** Default max items a user can pick */
-export const DEFAULT_MAX_PICK_COUNT = 50;
+export const DEFAULT_MAX_PICK_COUNT = 100;
 
 /** Minimum photos required to be ready for the game */
-export const MIN_PHOTOS_REQUIRED = 15;
+export const MIN_PHOTOS_REQUIRED = 5;
 
 /** Maximum photos to request per page when listing media items */
 export const MEDIA_ITEMS_PAGE_SIZE = 100;
