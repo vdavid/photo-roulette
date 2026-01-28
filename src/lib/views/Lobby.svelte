@@ -12,6 +12,7 @@
 		hasConnectedPhotos: boolean;
 		photoCount: number;
 		isConnectingPhotos: boolean;
+		photoLoadingProgress: { loaded: number; total: number } | null;
 		canStartGame: boolean;
 		onUpdateName: (_name: string, _emoji: string) => void;
 		onUpdateSettings: (_settings: GameSettings) => void;
@@ -30,6 +31,7 @@
 		hasConnectedPhotos,
 		photoCount,
 		isConnectingPhotos,
+		photoLoadingProgress,
 		canStartGame,
 		onUpdateName,
 		onUpdateSettings,
@@ -170,6 +172,21 @@
 				<Button variant="secondary" onclick={onConnectPhotos} disabled={isConnectingPhotos}>
 					{isConnectingPhotos ? 'Connecting...' : 'Change photos'}
 				</Button>
+			{:else if photoLoadingProgress}
+				<div class="photos-loading">
+					<p class="photos-loading-text">
+						Loading your {photoLoadingProgress.total} selected photos...
+					</p>
+					<div class="photos-loading-progress">
+						<span class="progress-count">{photoLoadingProgress.loaded} of {photoLoadingProgress.total}</span>
+						<div class="progress-bar">
+							<div
+								class="progress-fill"
+								style="width: {(photoLoadingProgress.loaded / photoLoadingProgress.total) * 100}%"
+							></div>
+						</div>
+					</div>
+				</div>
 			{:else}
 				<p class="photos-hint">
 					Connect at least {MIN_PHOTOS_PER_PLAYER} photos from Google Photos to play.
@@ -268,12 +285,15 @@
 		border-radius: var(--radius-full);
 		font-family: inherit;
 		font-size: var(--font-size-sm);
+		color: var(--color-text);
 		cursor: pointer;
 		transition: opacity var(--transition-fast);
 	}
 
 	.settings-chip:disabled {
 		cursor: default;
+		color: var(--color-text);
+		opacity: 1;
 	}
 
 	.settings-chip:not(:disabled):hover {
@@ -359,6 +379,42 @@
 	.photos-hint {
 		color: var(--color-text-muted);
 		margin: 0;
+	}
+
+	.photos-loading {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-md);
+	}
+
+	.photos-loading-text {
+		margin: 0;
+		color: var(--color-text-muted);
+	}
+
+	.photos-loading-progress {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
+	}
+
+	.progress-count {
+		font-size: var(--font-size-sm);
+		color: var(--color-text-muted);
+	}
+
+	.progress-bar {
+		height: 8px;
+		background: var(--color-background);
+		border-radius: var(--radius-full);
+		overflow: hidden;
+	}
+
+	.progress-fill {
+		height: 100%;
+		background: var(--color-primary);
+		border-radius: var(--radius-full);
+		transition: width 200ms ease-out;
 	}
 
 	.footer {

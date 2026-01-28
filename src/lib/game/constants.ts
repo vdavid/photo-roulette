@@ -48,6 +48,9 @@ export const MAX_PLAYERS = 8;
 /** Minimum number of photos required per player */
 export const MIN_PHOTOS_PER_PLAYER = 15;
 
+/** Maximum number of photos the user can pick from Google Photos */
+export const MAX_PHOTOS_TO_PICK = 50;
+
 // === Default Settings ===
 
 /** Default game settings */

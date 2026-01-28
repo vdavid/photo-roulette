@@ -32,9 +32,9 @@
 	// Calculate slide index based on wall-clock time so all players see the same photo
 	function calculateSlideIndex(photoCount: number): number {
 		if (photoCount === 0) return 0;
-		// Use wall-clock time divided by 4 seconds, modulo photo count
+		// Use wall-clock time divided by 3 seconds, modulo photo count
 		// This ensures all players with synced clocks see the same slide
-		return Math.floor(Date.now() / 4000) % photoCount;
+		return Math.floor(Date.now() / 3000) % photoCount;
 	}
 
 	// Get player info helper
@@ -227,6 +227,7 @@
 
 	{#if allGamePhotos.length > 0}
 		<section class="slideshow-section">
+			<h2>Camera roll</h2>
 			<div class="slideshow-container">
 				{#each allGamePhotos as photo, index (photo.id)}
 					<div class="slide" class:active={index === currentSlideIndex}>
@@ -420,8 +421,9 @@
 	}
 
 	.superlatives-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
 		gap: var(--space-md);
 	}
 
@@ -434,6 +436,8 @@
 		background: var(--color-surface);
 		border-radius: var(--radius-md);
 		text-align: center;
+		min-width: 140px;
+		flex: 0 1 auto;
 	}
 
 	.superlative-emoji {
@@ -479,6 +483,11 @@
 		margin-top: var(--space-lg);
 	}
 
+	.slideshow-section h2 {
+		margin: 0 0 var(--space-md);
+		font-size: var(--font-size-lg);
+	}
+
 	.slideshow-container {
 		position: relative;
 		width: 100%;
@@ -492,7 +501,7 @@
 		position: absolute;
 		inset: 0;
 		opacity: 0;
-		transition: opacity 400ms ease-in-out;
+		transition: opacity 800ms ease-in-out;
 	}
 
 	.slide.active {
@@ -503,7 +512,6 @@
 		width: 100%;
 		height: 100%;
 		object-fit: contain;
-		background: var(--color-surface);
 	}
 
 	.footer {

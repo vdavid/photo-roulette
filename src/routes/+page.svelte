@@ -3,6 +3,7 @@
 	import { Final, Game, Landing, Lobby, Results } from '$lib/views';
 	import { gameStore } from '$lib/stores/game.svelte.js';
 	import { ensureValidToken, isTestPlayer, openBlankPickerWindow, pickPhotos } from '$lib/photos';
+	import { MAX_PHOTOS_TO_PICK } from '$lib/game/constants.js';
 	import { Spinner } from '$lib/components';
 
 	// Set up logging for debugging
@@ -57,7 +58,7 @@
 
 			// Proceed with photo picking, passing the pre-opened window
 			await gameStore.connectPhotos(async () => {
-				return await pickPhotos(50, undefined, token, pickerWindow);
+				return await pickPhotos(MAX_PHOTOS_TO_PICK, undefined, token, pickerWindow);
 			});
 		} catch (error) {
 			console.error('Failed to connect photos:', error);
@@ -131,6 +132,7 @@
 		hasConnectedPhotos={gameStore.hasConnectedPhotos}
 		photoCount={gameStore.photoCount}
 		isConnectingPhotos={gameStore.isConnectingPhotos}
+		photoLoadingProgress={gameStore.photoLoadingProgress}
 		canStartGame={gameStore.canStartGame}
 		onUpdateName={handleUpdateName}
 		onUpdateSettings={handleUpdateSettings}

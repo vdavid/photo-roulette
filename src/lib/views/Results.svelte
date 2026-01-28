@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { onMount, onDestroy } from 'svelte';
 	import type { Player, PlayerId, RoundResult, PlayerScore } from '$lib/game/types.js';
+	import { ROUND_RESULT_DISPLAY_MS } from '$lib/game/constants.js';
 
 	interface Props {
 		result: RoundResult;
@@ -12,6 +14,22 @@
 
 	let { result, players, playerScores, currentRoundNumber, totalRounds, photoUrl }: Props =
 		$props();
+
+	// Countdown timer
+	let countdown = $state(Math.ceil(ROUND_RESULT_DISPLAY_MS / 1000));
+	let countdownInterval: ReturnType<typeof setInterval> | null = null;
+
+	onMount(() => {
+		countdownInterval = setInterval(() => {
+			countdown = Math.max(0, countdown - 1);
+		}, 1000);
+	});
+
+	onDestroy(() => {
+		if (countdownInterval) {
+			clearInterval(countdownInterval);
+		}
+	});
 
 	const photoOwner = $derived(players.find((p) => p.id === result.photoOwnerId));
 
@@ -137,7 +155,11 @@
 
 	<div class="next-round-hint">
 		<span class="loading-dot"></span>
-		Next round starting...
+		{#if currentRoundNumber >= totalRounds}
+			Final results in {countdown}...
+		{:else}
+			Next round starting in {countdown}...
+		{/if}
 	</div>
 </div>
 

@@ -169,6 +169,7 @@ function createGameStore() {
 	let photoCount = $state(0);
 	let isConnectingPhotos = $state(false);
 	let photoError = $state<string | null>(null);
+	let photoLoadingProgress = $state<{ loaded: number; total: number } | null>(null);
 
 	// Track photos shown during the game (for final screen thumbnails)
 	let gamePhotoUrls = $state<Map<string, string>>(new Map()); // photoId -> data URL
@@ -396,6 +397,15 @@ function createGameStore() {
 			}
 		});
 
+		playerNetwork.on('playerLeft', (playerId) => {
+			log('info', 'Player left', { playerId });
+			const playerIndex = players.findIndex((p) => p.id === playerId);
+			if (playerIndex !== -1) {
+				players.splice(playerIndex, 1);
+				players = [...players];
+			}
+		});
+
 		playerNetwork.on('settingsChanged', (newSettings) => {
 			log('debug', 'Settings changed', { settings: newSettings });
 			settings = newSettings;
@@ -516,6 +526,7 @@ function createGameStore() {
 		log('info', 'Connecting photos');
 		isConnectingPhotos = true;
 		photoError = null;
+		photoLoadingProgress = null;
 
 		try {
 			let processedImages: ProcessedImage[];
@@ -529,6 +540,9 @@ function createGameStore() {
 				const result = await pickerFn();
 				log('info', 'Photos picked', { count: result.photos.length });
 
+				// Set initial progress
+				photoLoadingProgress = { loaded: 0, total: result.photos.length };
+
 				// Step 2: Process photos - fetch with OAuth, resize, compress to base64
 				processedImages = await processPickedPhotos(
 					result.photos.map((p) => ({
@@ -539,6 +553,7 @@ function createGameStore() {
 					undefined, // Use stored token
 					(current, total, message) => {
 						log('debug', message);
+						photoLoadingProgress = { loaded: current, total };
 					}
 				);
 			}
@@ -574,6 +589,7 @@ function createGameStore() {
 			log('error', 'Failed to connect photos', { error });
 		} finally {
 			isConnectingPhotos = false;
+			photoLoadingProgress = null;
 		}
 	}
 
@@ -665,9 +681,11 @@ function createGameStore() {
 
 			// Set local state - use imageData instead of URL
 			resultsPhotoData = null; // Clear previous round's photo
-			currentImageData = photo.imageData;
+			currentImageData = photo.imageData ?? null;
 			// Save photo for final screen thumbnails
-			gamePhotoUrls.set(photo.id, createDataUrl(photo.imageData));
+			if (photo.imageData) {
+				gamePhotoUrls.set(photo.id, createDataUrl(photo.imageData));
+			}
 			currentRound = round;
 			timerStartTime = round.startTime;
 			timerEndTime = round.startTime + internalState.settings.timerSeconds * 1000;
@@ -1028,6 +1046,9 @@ function createGameStore() {
 		},
 		get photoError() {
 			return photoError;
+		},
+		get photoLoadingProgress() {
+			return photoLoadingProgress;
 		},
 
 		// Derived

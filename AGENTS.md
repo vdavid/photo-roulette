@@ -9,6 +9,24 @@
 
 ---
 
+## 🚨 Before committing: run `pnpm validate`
+
+```bash
+pnpm validate
+```
+
+This single command runs **all checks** in sequence and **fast-fails** on any error:
+
+1. `prettier --write .` — format all files
+2. `eslint . --fix` — lint and auto-fix
+3. `tsc --noEmit` — TypeScript type checking
+4. `svelte-check` — Svelte-specific checks
+5. `vitest run` — unit tests
+
+**Always run this before committing or opening a PR.**
+
+---
+
 ## Writing style
 
 - Keep the tone **friendly and informal**: this is a game for friends, built by friends

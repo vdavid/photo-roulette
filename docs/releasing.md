@@ -111,9 +111,7 @@ If you already have a network for your reverse proxy, use that instead in the fo
 
 ```bash
 cd /opt/photo-roulette
-docker build -t photo-roulette \
-  --build-arg PUBLIC_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com \
-  .
+docker build -t photo-roulette --build-arg PUBLIC_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com .
 ```
 
 Get your Google Client ID from the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).

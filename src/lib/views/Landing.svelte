@@ -94,7 +94,7 @@
 
 <div class="landing">
 	<div class="logo">
-		<span class="logo-emoji">📸</span>
+		<svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 135.5 135.5"><path fill="#b54a4a" d="M32 131c-7-2-12-9-12-16s2-9 5-9c2 1 2 1 2-1 2-17 20-31 38-29 5 1 4 1 5-1 1-5 4-9 6-13 2-1 2-1 0-4-8-19-12-47-7-51 2-2 3-1 10 19a1253 1253 0 0 0 6 16c0-16 7-38 11-38 3 0 3-1 2 27 0 25 0 25 2 25 16 3 20 19 7 25l-1 2a71 71 0 0 1-3 33h1c6 3 10 13 5 15H32z"/></svg>
 		<h1>Photo Roulette</h1>
 		<p class="tagline">Guess whose photo it is!</p>
 	</div>
@@ -202,10 +202,11 @@
 		text-align: center;
 	}
 
-	.logo-emoji {
-		font-size: 4rem;
+	.logo-icon {
+		width: 16rem;
+		height: 16rem;
 		display: block;
-		margin-bottom: var(--space-md);
+		margin: 0 auto var(--space-md);
 	}
 
 	.logo h1 {
