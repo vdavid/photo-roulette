@@ -547,8 +547,14 @@ function setupPlayerEvents(): void {
 
 	playerNetwork.on('joinRejected', (reason) => {
 		connectionStatus = 'error';
-		connectionError = reason;
+		// Save the error before cleanup clears it
+		const errorMessage = reason === 'game-in-progress'
+			? 'Cannot join - game already in progress'
+			: reason === 'room-full'
+				? 'Cannot join - room is full'
+				: reason;
 		cleanup();
+		connectionError = errorMessage;
 	});
 
 	playerNetwork.on('disconnected', () => {

@@ -12,7 +12,7 @@
 	const { takeResults, playerScores, players, isHost, myPlayerId, takes } = $derived(hotTakesStore);
 
 	// Calculate rankings
-	const rankings = $derived(() => {
+	const rankings = $derived.by(() => {
 		const activePlayers = players.filter((p) => !p.isSpectator);
 		const sorted = activePlayers
 			.map((player) => ({
@@ -39,7 +39,7 @@
 	});
 
 	// Find special takes
-	const mostControversialTake = $derived(() => {
+	const mostControversialTake = $derived.by(() => {
 		if (takeResults.length === 0) return null;
 		const sorted = [...takeResults].sort(
 			(a, b) => Math.abs(50 - a.agreePercent) - Math.abs(50 - b.agreePercent)
@@ -50,7 +50,7 @@
 		return { result, take, author };
 	});
 
-	const mostAgreedTake = $derived(() => {
+	const mostAgreedTake = $derived.by(() => {
 		if (takeResults.length === 0) return null;
 		const sorted = [...takeResults].sort((a, b) => b.agreePercent - a.agreePercent);
 		const result = sorted[0];
@@ -59,7 +59,7 @@
 		return { result, take, author };
 	});
 
-	const mostDisagreedTake = $derived(() => {
+	const mostDisagreedTake = $derived.by(() => {
 		if (takeResults.length === 0) return null;
 		const sorted = [...takeResults].sort((a, b) => a.agreePercent - b.agreePercent);
 		const result = sorted[0];
@@ -94,7 +94,7 @@
 	<section class="rankings">
 		<h2>Final rankings</h2>
 		<div class="rankings-list">
-			{#each rankings() as { player, score, rank }}
+			{#each rankings as { player, score, rank }}
 				<Card padding="md">
 					<div class="rank-item" class:winner={rank === 1} class:is-me={player.id === myPlayerId}>
 						<span class="rank-number">
@@ -123,46 +123,46 @@
 	<section class="highlights">
 		<h2>Take highlights</h2>
 
-		{#if mostControversialTake()?.take}
+		{#if mostControversialTake?.take}
 			<div class="highlight">
 				<h3>🔥 Most controversial</h3>
 				<div class="highlight-take">
 					<TakeCard
-						text={mostControversialTake()!.take!.text}
-						authorName={mostControversialTake()!.author?.name ?? 'Unknown'}
-						authorEmoji={mostControversialTake()!.author?.emoji ?? '?'}
+						text={mostControversialTake.take.text}
+						authorName={mostControversialTake.author?.name ?? 'Unknown'}
+						authorEmoji={mostControversialTake.author?.emoji ?? '?'}
 						isRevealed={true}
-						agreePercent={mostControversialTake()!.result.agreePercent}
+						agreePercent={mostControversialTake.result.agreePercent}
 					/>
 				</div>
 			</div>
 		{/if}
 
-		{#if mostAgreedTake()?.take}
+		{#if mostAgreedTake?.take}
 			<div class="highlight">
 				<h3>👍 Most agreed</h3>
 				<div class="highlight-take">
 					<TakeCard
-						text={mostAgreedTake()!.take!.text}
-						authorName={mostAgreedTake()!.author?.name ?? 'Unknown'}
-						authorEmoji={mostAgreedTake()!.author?.emoji ?? '?'}
+						text={mostAgreedTake.take.text}
+						authorName={mostAgreedTake.author?.name ?? 'Unknown'}
+						authorEmoji={mostAgreedTake.author?.emoji ?? '?'}
 						isRevealed={true}
-						agreePercent={mostAgreedTake()!.result.agreePercent}
+						agreePercent={mostAgreedTake.result.agreePercent}
 					/>
 				</div>
 			</div>
 		{/if}
 
-		{#if mostDisagreedTake()?.take}
+		{#if mostDisagreedTake?.take}
 			<div class="highlight">
 				<h3>👎 Most disagreed</h3>
 				<div class="highlight-take">
 					<TakeCard
-						text={mostDisagreedTake()!.take!.text}
-						authorName={mostDisagreedTake()!.author?.name ?? 'Unknown'}
-						authorEmoji={mostDisagreedTake()!.author?.emoji ?? '?'}
+						text={mostDisagreedTake.take.text}
+						authorName={mostDisagreedTake.author?.name ?? 'Unknown'}
+						authorEmoji={mostDisagreedTake.author?.emoji ?? '?'}
 						isRevealed={true}
-						agreePercent={mostDisagreedTake()!.result.agreePercent}
+						agreePercent={mostDisagreedTake.result.agreePercent}
 					/>
 				</div>
 			</div>

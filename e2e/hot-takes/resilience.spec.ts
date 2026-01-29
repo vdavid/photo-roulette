@@ -81,8 +81,8 @@ test.describe('Hot Takes resilience - Player disconnects', () => {
 	test.setTimeout(120000);
 
 	test('game continues when a non-host player disconnects during lobby', async ({ browser }) => {
-		const { players, roomCode } = await setupGameWithPlayers(browser, ['AAA', 'BBB', 'CCC']);
-		const [host, player2, player3] = players;
+		const { players } = await setupGameWithPlayers(browser, ['AAA', 'BBB', 'CCC']);
+		const [host, player2] = players;
 
 		try {
 			// Verify all players visible
@@ -94,10 +94,6 @@ test.describe('Hot Takes resilience - Player disconnects', () => {
 
 			// Wait a moment for disconnect to propagate
 			await host.page.waitForTimeout(2000);
-
-			// Host should see player marked as disconnected OR removed
-			// The game should still be functional
-			const startButton = host.page.getByRole('button', { name: 'Start game' });
 
 			// With only 2 connected players (AAA + CCC), start should be disabled (need 3)
 			// OR if BBB is still shown as disconnected, it depends on implementation
@@ -282,7 +278,7 @@ test.describe('Hot Takes resilience - Host disconnect', () => {
 
 	test('players see error when host disconnects in lobby', async ({ browser }) => {
 		const { players } = await setupGameWithPlayers(browser, ['AAA', 'BBB', 'CCC']);
-		const [host, player2, player3] = players;
+		const [host, player2] = players;
 
 		try {
 			// Host disconnects
@@ -320,7 +316,7 @@ test.describe('Hot Takes resilience - Timer expiry', () => {
 	test('game advances when voting timer expires', async ({ browser }) => {
 		// This test requires setting a short voting time
 		const { players } = await setupGameWithPlayers(browser, ['AAA', 'BBB', 'CCC']);
-		const [host, player2, player3] = players;
+		const [host] = players;
 
 		try {
 			// Set shortest voting time (10s)
@@ -415,7 +411,7 @@ test.describe('Hot Takes resilience - Duplicate sessions', () => {
 
 	test('opening second browser window does not corrupt game state', async ({ browser }) => {
 		const { players, roomCode } = await setupGameWithPlayers(browser, ['AAA', 'BBB', 'CCC']);
-		const [host, player2, player3] = players;
+		const [host] = players;
 
 		try {
 			// Player 2 opens a second browser window with same session

@@ -14,42 +14,45 @@
 	let joinCode = $state('');
 	let isHosting = $state(false);
 	let isJoining = $state(false);
-	let error = $state<string | null>(null);
+	let localError = $state<string | null>(null);
+
+	// Show either local error or store's connection error
+	const error = $derived(localError || hotTakesStore.connectionError);
 
 	async function handleHost() {
 		if (!name.trim()) {
-			error = 'Please enter your name';
+			localError = 'Please enter your name';
 			return;
 		}
 
 		isHosting = true;
-		error = null;
+		localError = null;
 
 		try {
 			await hotTakesStore.hostGame(name.trim(), emoji);
 		} catch (e) {
-			error = (e as Error).message;
+			localError = (e as Error).message;
 			isHosting = false;
 		}
 	}
 
 	async function handleJoin() {
 		if (!name.trim()) {
-			error = 'Please enter your name';
+			localError = 'Please enter your name';
 			return;
 		}
 		if (!joinCode.trim()) {
-			error = 'Please enter a room code';
+			localError = 'Please enter a room code';
 			return;
 		}
 
 		isJoining = true;
-		error = null;
+		localError = null;
 
 		try {
 			await hotTakesStore.joinGame(joinCode.trim().toUpperCase(), name.trim(), emoji);
 		} catch (e) {
-			error = (e as Error).message;
+			localError = (e as Error).message;
 			isJoining = false;
 		}
 	}
