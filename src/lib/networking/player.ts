@@ -3,6 +3,7 @@
  * Connects to host and receives game state updates
  */
 
+import { getLogger } from '$lib/common/logging.js';
 import type { DataConnection } from 'peerjs';
 import type {
 	PlayerId,
@@ -37,6 +38,8 @@ import { createBaseMessage, dataToPlayerScores } from './types.js';
 import { PeerManager } from './peer-manager.js';
 import { normalizeRoomCode, isValidRoomCode } from './room-code.js';
 import { RECONNECT_DELAY_MS, MAX_RECONNECT_ATTEMPTS } from './constants.js';
+
+const logger = getLogger(['networking', 'player']);
 
 /** Events emitted by PlayerNetwork */
 export interface PlayerNetworkEvents {
@@ -351,7 +354,7 @@ export class PlayerNetwork {
 				break;
 
 			default:
-				console.warn(`Player received unexpected message type: ${message.type}`);
+				logger.warn`Player received unexpected message type: ${message.type}`;
 		}
 	}
 
@@ -398,7 +401,7 @@ export class PlayerNetwork {
 
 	private async attemptReconnect(): Promise<void> {
 		if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-			console.log('Max reconnect attempts reached');
+			logger.info`Max reconnect attempts reached`;
 			this.cleanup();
 			return;
 		}
@@ -406,7 +409,7 @@ export class PlayerNetwork {
 		this.isReconnecting = true;
 		this.reconnectAttempts++;
 
-		console.log(`Reconnect attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
+		logger.info`Reconnect attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`;
 
 		await new Promise((resolve) => setTimeout(resolve, RECONNECT_DELAY_MS));
 
@@ -430,7 +433,7 @@ export class PlayerNetwork {
 			this.emit('reconnected');
 		} catch (error) {
 			this.isReconnecting = false;
-			console.error('Reconnect failed:', error);
+			logger.error`Reconnect failed: ${error}`;
 			this.attemptReconnect();
 		}
 	}
@@ -454,7 +457,7 @@ export class PlayerNetwork {
 				try {
 					(callback as (...args: Parameters<PlayerNetworkEvents[K]>) => void)(...args);
 				} catch (error) {
-					console.error(`Error in event listener for ${event}:`, error);
+					logger.error`Error in event listener for ${event}: ${error}`;
 				}
 			}
 		}

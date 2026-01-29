@@ -1,8 +1,11 @@
-# Bunny photoroulette game thing — technical spec
+# Party Games Platform — technical spec
 
 ## What is this?
 
-A browser-based Photo Roulette clone for 8 friends. One host, seven players. Everyone connects their Google Photos, and the game shows random photos — guess whose photo it is to score points.
+A browser-based multi-game platform for 8 friends. One host, seven players. Currently features two games:
+
+1. **Photo Roulette** — Connect Google Photos, guess whose photo is shown
+2. **Hot Takes** — Submit anonymous opinions, vote and guess who wrote them
 
 ## Architecture
 
@@ -11,10 +14,45 @@ Host (you) ←── WebRTC DataChannel ──→ 7 friends
                      │
               PeerJS Cloud (signaling)
                      │
-              Google Photos CDN (images)
+              Google Photos CDN (for Photo Roulette)
 ```
 
 **Star topology**: host maintains all connections and game state. No mesh, no complexity.
+
+## Multi-game architecture
+
+The platform supports multiple games through a modular architecture:
+
+```
+src/lib/
+├── common/              # Shared across all games
+│   ├── components/      # Button, Card, Input, etc.
+│   ├── networking/      # Base PeerJS wrapper
+│   └── stores/          # Persistence utilities
+├── games/
+│   ├── photo-roulette/  # Photo guessing game
+│   │   ├── logic/       # Game rules, scoring
+│   │   ├── networking/  # Game-specific messages
+│   │   ├── views/       # Svelte components
+│   │   └── store.svelte.ts
+│   └── hot-takes/       # Opinion voting game
+│       ├── logic/
+│       ├── networking/
+│       ├── views/
+│       └── store.svelte.ts
+└── views/
+    └── GameSelector.svelte  # Main menu
+```
+
+**Game registry** (`src/lib/common/game-registry.ts`):
+
+Each game registers itself with:
+
+- `id` — URL-friendly identifier (e.g., `photo-roulette`, `hot-takes`)
+- `name` — Display name
+- `icon` — Emoji icon
+- `description` — Short description
+- `minPlayers` / `maxPlayers` — Player limits
 
 ## Tech stack
 

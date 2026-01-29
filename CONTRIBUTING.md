@@ -66,15 +66,40 @@ This is a SvelteKit app with PeerJS for P2P networking. Here's how the pieces co
 
 ### Architecture pattern
 
-| Directory             | Purpose                                   |
-| --------------------- | ----------------------------------------- |
-| `src/routes/`         | SvelteKit pages and entry point           |
-| `src/lib/stores/`     | Centralized game state (`game.svelte.ts`) |
-| `src/lib/views/`      | Page-level view components                |
-| `src/lib/components/` | Reusable UI components                    |
-| `src/lib/game/`       | Pure game logic functions                 |
-| `src/lib/networking/` | P2P networking (PeerJS wrapper)           |
-| `src/lib/photos/`     | Google Photos integration + test mode     |
+This is a multi-game platform that can host multiple party games. Each game has its own module under `src/lib/games/`.
+
+| Directory                       | Purpose                                     |
+| ------------------------------- | ------------------------------------------- |
+| `src/routes/`                   | SvelteKit pages and entry point             |
+| `src/lib/common/`               | Shared code across all games                |
+| `src/lib/common/components/`    | Reusable UI components (Button, Card, etc.) |
+| `src/lib/common/networking/`    | Base P2P networking (PeerJS wrapper)        |
+| `src/lib/common/stores/`        | Shared store utilities                      |
+| `src/lib/views/`                | Game selector and shared views              |
+| `src/lib/games/`                | Game-specific modules                       |
+| `src/lib/games/photo-roulette/` | Photo Roulette game                         |
+| `src/lib/games/hot-takes/`      | Hot Takes game                              |
+
+#### Game module structure
+
+Each game follows the same structure:
+
+```
+src/lib/games/<game-name>/
+├── logic/           # Pure game logic (state, scoring, rounds)
+│   ├── types.ts     # Game-specific types
+│   ├── state.ts     # State machine
+│   ├── scoring.ts   # Points calculation
+│   └── round.ts     # Round management
+├── networking/      # Game-specific networking
+│   ├── types.ts     # Message types
+│   ├── host.ts      # Host networking
+│   └── player.ts    # Player networking
+├── views/           # Svelte view components
+├── components/      # Game-specific UI components
+├── store.svelte.ts  # Svelte 5 reactive store
+└── index.ts         # Game definition export
+```
 
 ---
 

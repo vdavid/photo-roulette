@@ -3,6 +3,7 @@
  * Manages game state and broadcasts to all players
  */
 
+import { getLogger } from '$lib/common/logging.js';
 import type {
 	PlayerId,
 	Player,
@@ -33,6 +34,8 @@ import type {
 import { createBaseMessage, playerScoresToData } from './types.js';
 import { PeerManager } from './peer-manager.js';
 import { generateRoomCode } from './room-code.js';
+
+const logger = getLogger(['networking', 'host']);
 
 /** Events emitted by HostNetwork */
 export interface HostNetworkEvents {
@@ -301,7 +304,7 @@ export class HostNetwork {
 	private setupPeerEvents(): void {
 		this.peerManager.on('connection', (peerId, _conn) => {
 			// New peer connected, wait for join request
-			console.log(`New connection from ${peerId}`);
+			logger.debug`New connection from ${peerId}`;
 		});
 
 		this.peerManager.on('message', (peerId, message) => {
@@ -343,7 +346,7 @@ export class HostNetwork {
 				break;
 
 			default:
-				console.warn(`Host received unexpected message type: ${message.type}`);
+				logger.warn`Host received unexpected message type: ${message.type}`;
 		}
 	}
 
@@ -403,7 +406,7 @@ export class HostNetwork {
 				try {
 					(callback as (...args: Parameters<HostNetworkEvents[K]>) => void)(...args);
 				} catch (error) {
-					console.error(`Error in event listener for ${event}:`, error);
+					logger.error`Error in event listener for ${event}: ${error}`;
 				}
 			}
 		}

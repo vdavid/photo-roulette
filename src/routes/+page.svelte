@@ -7,6 +7,14 @@
 	import GameSelector from '$lib/views/GameSelector.svelte';
 	import { Spinner } from '$lib/common/components';
 	import { isValidGameId, type GameId } from '$lib/common';
+	import { configureLogging, getLogger } from '$lib/common/logging';
+
+	const logger = getLogger(['app']);
+
+	// Initialize logging on startup
+	if (browser) {
+		configureLogging();
+	}
 
 	// Photo Roulette game imports
 	import {
@@ -115,7 +123,7 @@
 		// IMPORTANT: Open the picker window IMMEDIATELY during user gesture
 		const pickerWindow = openBlankPickerWindow();
 		if (!pickerWindow) {
-			console.error('Popup blocked! Please allow popups for this site.');
+			logger.error`Popup blocked! Please allow popups for this site.`;
 			return;
 		}
 
@@ -125,7 +133,7 @@
 				return await pickPhotos(MAX_PHOTOS_TO_PICK, undefined, token, pickerWindow);
 			});
 		} catch (error) {
-			console.error('Failed to connect photos:', error);
+			logger.error`Failed to connect photos: ${error}`;
 			pickerWindow.close();
 		}
 	}

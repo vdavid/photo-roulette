@@ -27,6 +27,9 @@ import {
 	getRankedPlayers,
 } from './logic/scoring.js';
 import { MIN_PLAYERS, REVEAL_DISPLAY_MS } from './logic/constants.js';
+import { getLogger } from '$lib/common/logging.js';
+
+const logger = getLogger(['game', 'hot-takes']);
 
 /**
  * Test-mode overrides for faster E2E tests.
@@ -368,7 +371,7 @@ function setupHostEvents(): void {
 	});
 
 	hostNetwork.on('error', (error) => {
-		console.error('Host network error:', error);
+		logger.error`Host network error: ${error}`;
 		connectionError = error.message;
 	});
 }
@@ -414,12 +417,7 @@ function startVotingPhase(): void {
 	// Start voting for first take
 	if (currentRound.currentTake) {
 		const votingTime = getEffectiveVotingTime(settings.votingTimeSeconds);
-		hostNetwork?.broadcastVotingStart(
-			currentRound.currentTake,
-			0,
-			takes.length,
-			votingTime
-		);
+		hostNetwork?.broadcastVotingStart(currentRound.currentTake, 0, takes.length, votingTime);
 		startTimer(votingTime);
 	}
 }
@@ -508,12 +506,7 @@ function advanceToNextTakePhase(): void {
 	phase = 'voting';
 
 	const votingTime = getEffectiveVotingTime(settings.votingTimeSeconds);
-	hostNetwork?.broadcastVotingStart(
-		currentRound.currentTake!,
-		nextIndex,
-		takes.length,
-		votingTime
-	);
+	hostNetwork?.broadcastVotingStart(currentRound.currentTake!, nextIndex, takes.length, votingTime);
 	startTimer(votingTime);
 }
 
@@ -585,11 +578,12 @@ function setupPlayerEvents(): void {
 	playerNetwork.on('joinRejected', (reason) => {
 		connectionStatus = 'error';
 		// Save the error before cleanup clears it
-		const errorMessage = reason === 'game-in-progress'
-			? 'Cannot join - game already in progress'
-			: reason === 'room-full'
-				? 'Cannot join - room is full'
-				: reason;
+		const errorMessage =
+			reason === 'game-in-progress'
+				? 'Cannot join - game already in progress'
+				: reason === 'room-full'
+					? 'Cannot join - room is full'
+					: reason;
 		cleanup();
 		connectionError = errorMessage;
 	});
@@ -688,7 +682,7 @@ function setupPlayerEvents(): void {
 	);
 
 	playerNetwork.on('error', (error) => {
-		console.error('Player network error:', error);
+		logger.error`Player network error: ${error}`;
 		connectionError = error.message;
 	});
 }

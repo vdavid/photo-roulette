@@ -1,5 +1,5 @@
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
-import { injectTestTimings, TEST_TIMINGS } from './test-helpers';
+import { injectTestTimings } from './test-helpers';
 
 /**
  * Hot Takes Resilience Tests
@@ -138,11 +138,11 @@ test.describe('Hot Takes resilience - Player disconnects', () => {
 
 			// The game should eventually advance (not hang forever waiting for BBB)
 			// This might take some time as the system detects disconnect
-			await expect(
-				host.page.getByText(/Do you agree with this take|Waiting/i).first()
-			).toBeVisible({
-				timeout: 30000,
-			});
+			await expect(host.page.getByText(/Do you agree with this take|Waiting/i).first()).toBeVisible(
+				{
+					timeout: 30000,
+				}
+			);
 
 			console.log('Game advanced after player disconnect during submission');
 		} finally {
@@ -393,9 +393,7 @@ test.describe('Hot Takes resilience - Late join attempts', () => {
 			await latePage.getByRole('button', { name: 'Join' }).click();
 
 			// Should see an error or be rejected
-			await expect(
-				latePage.getByText(/started|progress|cannot join|full/i).first()
-			).toBeVisible({
+			await expect(latePage.getByText(/started|progress|cannot join|full/i).first()).toBeVisible({
 				timeout: 10000,
 			});
 

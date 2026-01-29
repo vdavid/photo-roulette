@@ -40,6 +40,9 @@ import type {
 	JoinRejectionReason,
 	PlayerJoinRejectedMessage,
 } from '$lib/common/networking/types.js';
+import { getLogger } from '$lib/common/logging.js';
+
+const logger = getLogger(['game', 'photo-roulette']);
 
 /** Events emitted by PhotoRoulettePlayer */
 export interface PhotoRoulettePlayerEvents {
@@ -353,7 +356,7 @@ export class PhotoRoulettePlayer {
 				break;
 
 			default:
-				console.warn(`Player received unexpected message type: ${message.type}`);
+				logger.warn`Player received unexpected message type: ${message.type}`;
 		}
 	}
 
@@ -399,7 +402,7 @@ export class PhotoRoulettePlayer {
 
 	private async attemptReconnect(): Promise<void> {
 		if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-			console.log('Max reconnect attempts reached');
+			logger.info`Max reconnect attempts reached`;
 			this.cleanup();
 			return;
 		}
@@ -407,7 +410,7 @@ export class PhotoRoulettePlayer {
 		this.isReconnecting = true;
 		this.reconnectAttempts++;
 
-		console.log(`Reconnect attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
+		logger.info`Reconnect attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`;
 
 		await new Promise((resolve) => setTimeout(resolve, RECONNECT_DELAY_MS));
 
@@ -428,7 +431,7 @@ export class PhotoRoulettePlayer {
 			this.emit('reconnected');
 		} catch (error) {
 			this.isReconnecting = false;
-			console.error('Reconnect failed:', error);
+			logger.error`Reconnect failed: ${error}`;
 			this.attemptReconnect();
 		}
 	}
@@ -452,7 +455,7 @@ export class PhotoRoulettePlayer {
 				try {
 					(callback as (...args: Parameters<PhotoRoulettePlayerEvents[K]>) => void)(...args);
 				} catch (error) {
-					console.error(`Error in event listener for ${event}:`, error);
+					logger.error`Error in event listener for ${event}: ${error}`;
 				}
 			}
 		}

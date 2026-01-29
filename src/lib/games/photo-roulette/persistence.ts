@@ -4,6 +4,9 @@
  */
 
 import type { GamePhase, GameSettings, Player, PlayerId } from '$lib/game/types.js';
+import { getLogger } from '$lib/common/logging.js';
+
+const logger = getLogger(['persistence']);
 
 const SESSION_KEY = 'photoroulette-session';
 
@@ -38,7 +41,7 @@ export function saveSession(session: Omit<PersistedSession, 'version' | 'timesta
 		};
 		sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
 	} catch (error) {
-		console.warn('Failed to save session:', error);
+		logger.warn`Failed to save session: ${error}`;
 	}
 }
 
@@ -55,21 +58,21 @@ export function loadSession(): PersistedSession | null {
 
 		// Check version compatibility
 		if (data.version !== CURRENT_VERSION) {
-			console.warn('Session version mismatch, discarding');
+			logger.warn`Session version mismatch, discarding`;
 			clearSession();
 			return null;
 		}
 
 		// Check if session is expired
 		if (Date.now() - data.timestamp > SESSION_EXPIRY_MS) {
-			console.warn('Session expired, discarding');
+			logger.warn`Session expired, discarding`;
 			clearSession();
 			return null;
 		}
 
 		return data;
 	} catch (error) {
-		console.warn('Failed to load session:', error);
+		logger.warn`Failed to load session: ${error}`;
 		clearSession();
 		return null;
 	}
@@ -82,7 +85,7 @@ export function clearSession(): void {
 	try {
 		sessionStorage.removeItem(SESSION_KEY);
 	} catch (error) {
-		console.warn('Failed to clear session:', error);
+		logger.warn`Failed to clear session: ${error}`;
 	}
 }
 

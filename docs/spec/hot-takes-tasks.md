@@ -317,8 +317,8 @@ Transform the Photo Roulette app into a multi-game platform that can host multip
 ### 5.1 Code quality
 
 - [x] Run `pnpm validate` - must pass completely
-- [ ] Review all TODO comments and address them
-- [ ] Ensure no console.log statements in production code
+- [x] Review all TODO comments and address them
+- [x] Ensure no console.log statements in production code (replaced with logtape 2.0)
 - [x] Verify all TypeScript strict mode errors resolved
 
 ### 5.2 UI polish
@@ -330,9 +330,9 @@ Transform the Photo Roulette app into a multi-game platform that can host multip
 
 ### 5.3 Documentation
 
-- [ ] Update CONTRIBUTING.md with new folder structure
-- [ ] Update docs/spec/tech.md with multi-game architecture
-- [ ] Create docs/spec/hot-takes.md with game rules and scoring
+- [x] Update CONTRIBUTING.md with new folder structure
+- [x] Update docs/spec/tech.md with multi-game architecture
+- [x] Create docs/spec/hot-takes.md with game rules and scoring
 
 ### 5.4 Final validation
 
@@ -347,13 +347,13 @@ Transform the Photo Roulette app into a multi-game platform that can host multip
 
 ## Task summary
 
-| Phase | Tasks   | Description                         | Status |
-| ----- | ------- | ----------------------------------- | ------ |
+| Phase | Tasks   | Description                         | Status  |
+| ----- | ------- | ----------------------------------- | ------- |
 | 1     | 1.1-1.9 | Refactor to multi-game architecture | ✅ Done |
 | 2     | 2.1-2.9 | Implement Hot Takes game            | ✅ Done |
 | 3     | 3.1-3.4 | Unit tests for Hot Takes            | ✅ Done |
 | 4     | 4.1-4.4 | E2E tests                           | ✅ Done |
-| 5     | 5.1-5.4 | Polish and final validation         | ⚠️ Mostly done (docs pending) |
+| 5     | 5.1-5.4 | Polish and final validation         | ✅ Done |
 
 **Total estimated tasks:** ~85 subtasks across 5 phases
 

@@ -3,7 +3,9 @@
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
+	"packageManager": "pnpm@10.28.2",
 	"scripts": {
+		"preinstall": "npx only-allow pnpm",
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
@@ -43,6 +45,7 @@
 		"vitest": "^4.0.18"
 	},
 	"dependencies": {
+		"@logtape/logtape": "^2.0.2",
 		"peerjs": "^1.5.5"
 	}
 }

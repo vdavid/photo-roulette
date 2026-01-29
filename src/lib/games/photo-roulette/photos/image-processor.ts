@@ -8,6 +8,9 @@
 
 import type { PickedPhoto } from './types.js';
 import { getValidToken } from './oauth.js';
+import { getLogger } from '$lib/common/logging.js';
+
+const logger = getLogger(['photos', 'processor']);
 
 /** Maximum dimension for resized images (bounding box) */
 export const MAX_IMAGE_SIZE = 1600;
@@ -208,7 +211,7 @@ export async function processPickedPhotos(
 			});
 		} catch (error) {
 			// Log error but continue with other photos
-			console.error(`Failed to process photo ${photo.id}:`, error);
+			logger.error`Failed to process photo ${photo.id}: ${error}`;
 			// Don't add to processed array - skip failed photos
 		}
 	}

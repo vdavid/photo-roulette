@@ -1,5 +1,5 @@
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
-import { injectTestTimings, TEST_TIMINGS } from './test-helpers';
+import { injectTestTimings } from './test-helpers';
 
 /**
  * Full Hot Takes game E2E test with 3 players
@@ -17,8 +17,8 @@ async function selectHotTakes(page: Page) {
 	await expect(page.getByRole('heading', { name: 'Hot Takes' })).toBeVisible();
 }
 
-// Helper to set up a page with test timings
-async function setupPage(page: Page) {
+// Helper to set up a page with test timings (for potential future use)
+async function _setupPage(page: Page) {
 	await injectTestTimings(page);
 }
 

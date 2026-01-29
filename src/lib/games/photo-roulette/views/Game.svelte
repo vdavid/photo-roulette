@@ -108,7 +108,7 @@
 					src={photoUrl}
 					alt="Guess who this belongs to"
 					class="photo"
-				class:loaded={imageLoaded}
+					class:loaded={imageLoaded}
 					style="filter: blur({blurAmount}px)"
 					onload={handleImageLoad}
 				/>

@@ -43,6 +43,7 @@ export default [
 				'error',
 				{ argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
 			],
+			'@typescript-eslint/no-unused-expressions': ['error', { allowTaggedTemplates: true }],
 		},
 	},
 	{
@@ -67,6 +68,7 @@ export default [
 				'error',
 				{ argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
 			],
+			'@typescript-eslint/no-unused-expressions': ['error', { allowTaggedTemplates: true }],
 		},
 	},
 	{

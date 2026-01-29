@@ -13,6 +13,9 @@ import {
 	MAX_MISSED_PINGS,
 } from './constants.js';
 import { roomCodeToPeerId } from './room-code.js';
+import { getLogger } from '$lib/common/logging.js';
+
+const logger = getLogger(['networking', 'peer-manager']);
 
 /** Events emitted by PeerManager */
 export interface PeerManagerEvents {
@@ -121,7 +124,7 @@ export class PeerManager {
 	send(peerId: string, message: NetworkMessage): boolean {
 		const conn = this.connections.get(peerId);
 		if (!conn || !conn.open) {
-			console.warn(`Cannot send to ${peerId}: connection not open`);
+			logger.warn`Cannot send to ${peerId}: connection not open`;
 			return false;
 		}
 
@@ -129,7 +132,7 @@ export class PeerManager {
 			conn.send(message);
 			return true;
 		} catch (error) {
-			console.error(`Error sending to ${peerId}:`, error);
+			logger.error`Error sending to ${peerId}: ${error}`;
 			return false;
 		}
 	}
@@ -143,7 +146,7 @@ export class PeerManager {
 				try {
 					conn.send(message);
 				} catch (error) {
-					console.error(`Error broadcasting to ${peerId}:`, error);
+					logger.error`Error broadcasting to ${peerId}: ${error}`;
 				}
 			}
 		}
@@ -287,7 +290,7 @@ export class PeerManager {
 		});
 
 		conn.on('error', (err) => {
-			console.error(`Connection error with ${peerId}:`, err);
+			logger.error`Connection error with ${peerId}: ${err}`;
 			this.updatePeerState(peerId, 'error');
 		});
 
@@ -351,11 +354,11 @@ export class PeerManager {
 			if (state.lastPingTime && Date.now() - state.lastPingTime > PING_TIMEOUT_MS) {
 				const missed = (this.missedPings.get(peerId) || 0) + 1;
 				this.missedPings.set(peerId, missed);
-				console.warn(`Missed ping ${missed}/${MAX_MISSED_PINGS} for ${peerId}`);
+				logger.warn`Missed ping ${missed}/${MAX_MISSED_PINGS} for ${peerId}`;
 
 				// Only disconnect after MAX_MISSED_PINGS consecutive misses
 				if (missed >= MAX_MISSED_PINGS) {
-					console.warn(`Connection to ${peerId} timed out after ${missed} missed pings`);
+					logger.warn`Connection to ${peerId} timed out after ${missed} missed pings`;
 					this.handleConnectionClose(peerId);
 					return;
 				}
@@ -389,7 +392,7 @@ export class PeerManager {
 				try {
 					(callback as (...args: Parameters<PeerManagerEvents[K]>) => void)(...args);
 				} catch (error) {
-					console.error(`Error in event listener for ${event}:`, error);
+					logger.error`Error in event listener for ${event}: ${error}`;
 				}
 			}
 		}

@@ -24,6 +24,9 @@ import {
 	PICKER_AUTOCLOSE_SUFFIX,
 } from './constants.js';
 import { getValidToken } from './oauth.js';
+import { getLogger } from '$lib/common/logging.js';
+
+const logger = getLogger(['photos', 'picker']);
 
 /**
  * Parse duration string (e.g., "2s", "1800s") to milliseconds
@@ -317,17 +320,10 @@ export async function pickPhotos(
 		updateState('creating');
 		callbacks?.onProgress?.('Creating photo picker session...');
 
-		console.log(
-			'[PhotoPicker] Creating session with token:',
-			token?.accessToken?.slice(0, 20) + '...'
-		);
+		logger.debug`Creating session with token: ${token?.accessToken?.slice(0, 20)}...`;
 		const session = await createSession(maxItemCount, token);
 		sessionId = session.id;
-		console.log('[PhotoPicker] Session created:', {
-			id: session.id,
-			pickerUri: session.pickerUri,
-			expireTime: session.expireTime,
-		});
+		logger.debug`Session created: id=${session.id}, pickerUri=${session.pickerUri}, expireTime=${session.expireTime}`;
 
 		// Step 2: Navigate picker window to session URI
 		updateState('waiting-for-user');
@@ -342,7 +338,7 @@ export async function pickPhotos(
 			);
 		}
 
-		console.log('[PhotoPicker] Navigating picker window to:', session.pickerUri);
+		logger.debug`Navigating picker window to: ${session.pickerUri}`;
 		navigatePickerWindow(win, session.pickerUri);
 
 		// Step 3: Poll for completion
@@ -367,10 +363,10 @@ export async function pickPhotos(
 
 		// Filter to only photos (no videos)
 		const photoItems = mediaItems.filter((item) => item.type === 'PHOTO');
-		console.log('[PhotoPicker] Raw media items from API:', mediaItems);
-		console.log('[PhotoPicker] First item mediaFile:', mediaItems[0]?.mediaFile);
+		logger.debug`Raw media items from API: ${mediaItems.length} items`;
+		logger.debug`First item mediaFile: ${JSON.stringify(mediaItems[0]?.mediaFile)}`;
 		const photos = photoItems.map(toPickedPhoto);
-		console.log('[PhotoPicker] Converted photos:', photos);
+		logger.debug`Converted ${photos.length} photos`;
 
 		// Step 5: Cleanup session
 		try {

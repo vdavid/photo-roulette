@@ -32,6 +32,9 @@ import type {
 import { playerScoresToData } from './types.js';
 import { PeerManager, generateRoomCode, createBaseMessage } from '$lib/common/networking/index.js';
 import type { JoinRejectionReason } from '$lib/common/networking/types.js';
+import { getLogger } from '$lib/common/logging.js';
+
+const logger = getLogger(['game', 'photo-roulette']);
 
 /** Events emitted by PhotoRouletteHost */
 export interface PhotoRouletteHostEvents {
@@ -294,7 +297,7 @@ export class PhotoRouletteHost {
 
 	private setupPeerEvents(): void {
 		this.peerManager.on('connection', (peerId, _conn) => {
-			console.log(`New connection from ${peerId}`);
+			logger.debug`New connection from ${peerId}`;
 		});
 
 		this.peerManager.on('message', (peerId, message) => {
@@ -336,7 +339,7 @@ export class PhotoRouletteHost {
 				break;
 
 			default:
-				console.warn(`Host received unexpected message type: ${message.type}`);
+				logger.warn`Host received unexpected message type: ${message.type}`;
 		}
 	}
 
@@ -391,7 +394,7 @@ export class PhotoRouletteHost {
 				try {
 					(callback as (...args: Parameters<PhotoRouletteHostEvents[K]>) => void)(...args);
 				} catch (error) {
-					console.error(`Error in event listener for ${event}:`, error);
+					logger.error`Error in event listener for ${event}: ${error}`;
 				}
 			}
 		}
