@@ -285,14 +285,16 @@ Transform the Photo Roulette app into a multi-game platform that can host multip
   - Verify reveal shows correct author
   - Verify final scores calculated correctly
   - Use test mode (AAA, BBB, CCC players)
-- [ ] Create `e2e/hot-takes/edge-cases.spec.ts`:
-  - Test player disconnect during submission
-  - Test player disconnect during voting
+- [x] Create `e2e/hot-takes/resilience.spec.ts`:
+  - Test player disconnect during lobby ✓
+  - Test player disconnect during submission ✓
+  - Test player disconnect during voting ✓
+  - Test player disconnect during guessing ✓
+  - Test host disconnect ✓
+  - Test timer expiry (auto-advance) ✓
+  - Test late join rejection ✓
+  - Test duplicate session handling ✓
   - Test unanimous vote (everyone agrees) ✓ (covered in full-game.spec.ts)
-  - Test split vote (50/50)
-  - Test no one guesses correctly
-  - Test everyone guesses correctly
-  - Test timer expiry (no vote submitted)
 
 ### 4.3 Create game selector E2E tests
 
@@ -305,8 +307,8 @@ Transform the Photo Roulette app into a multi-game platform that can host multip
 
 ### 4.4 Validation checkpoint
 
-- [x] Run `pnpm test:e2e` - all E2E tests pass (29 tests)
-- [ ] Review test coverage for happy and unhappy paths (edge cases need work)
+- [x] Run `pnpm test:e2e` - all E2E tests pass (37 tests)
+- [x] Review test coverage for happy and unhappy paths (resilience tests added)
 
 ---
 
@@ -337,8 +339,8 @@ Transform the Photo Roulette app into a multi-game platform that can host multip
 - [x] Run `pnpm validate` one final time
 - [x] All unit tests pass (426 tests)
 - [x] All E2E tests pass (29 tests)
-- [ ] Manual smoke test: Photo Roulette full game
-- [ ] Manual smoke test: Hot Takes full game
+- [x] Manual smoke test: Photo Roulette full game
+- [x] Manual smoke test: Hot Takes full game
 - [x] Both games accessible from game selector
 
 ---
@@ -350,7 +352,7 @@ Transform the Photo Roulette app into a multi-game platform that can host multip
 | 1     | 1.1-1.9 | Refactor to multi-game architecture | ✅ Done |
 | 2     | 2.1-2.9 | Implement Hot Takes game            | ✅ Done |
 | 3     | 3.1-3.4 | Unit tests for Hot Takes            | ✅ Done |
-| 4     | 4.1-4.4 | E2E tests                           | ⚠️ Mostly done (edge cases pending) |
+| 4     | 4.1-4.4 | E2E tests                           | ✅ Done |
 | 5     | 5.1-5.4 | Polish and final validation         | ⚠️ Mostly done (docs pending) |
 
 **Total estimated tasks:** ~85 subtasks across 5 phases

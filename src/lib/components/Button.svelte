@@ -73,58 +73,69 @@
 		opacity: 0.6;
 	}
 
-	/* Sizes */
+	/* Sizes - used dynamically */
+	/*noinspection CssUnusedSymbol*/
 	.sm {
 		padding: var(--space-sm) var(--space-md);
 		font-size: var(--font-size-sm);
 		min-height: 36px;
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.md {
 		padding: var(--space-sm) var(--space-lg);
 		font-size: var(--font-size-base);
 		min-height: 44px;
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.lg {
 		padding: var(--space-md) var(--space-xl);
 		font-size: var(--font-size-lg);
 		min-height: 52px;
 	}
 
-	/* Variants */
+	/* Variants - used dynamically */
+	/*noinspection CssUnusedSymbol*/
 	.primary {
 		background-color: var(--color-primary);
 		color: white;
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.primary:hover:not(:disabled) {
 		background-color: var(--color-primary-hover);
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.secondary {
 		background-color: var(--color-secondary);
 		color: var(--color-text);
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.secondary:hover:not(:disabled) {
 		background-color: var(--color-secondary-hover);
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.ghost {
 		background-color: transparent;
 		color: var(--color-text);
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.ghost:hover:not(:disabled) {
 		background-color: rgba(0, 0, 0, 0.05);
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.danger {
 		background-color: var(--color-error);
 		color: white;
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.danger:hover:not(:disabled) {
 		background-color: var(--color-error-light);
 	}

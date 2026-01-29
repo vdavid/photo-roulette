@@ -1,4 +1,5 @@
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
+import { injectTestTimings, TEST_TIMINGS } from './test-helpers';
 
 /**
  * Full Hot Takes game E2E test with 3 players
@@ -16,6 +17,11 @@ async function selectHotTakes(page: Page) {
 	await expect(page.getByRole('heading', { name: 'Hot Takes' })).toBeVisible();
 }
 
+// Helper to set up a page with test timings
+async function setupPage(page: Page) {
+	await injectTestTimings(page);
+}
+
 interface PlayerContext {
 	name: string;
 	context: BrowserContext;
@@ -23,8 +29,8 @@ interface PlayerContext {
 }
 
 test.describe('Full Hot Takes game', () => {
-	// Timeout for full game
-	test.setTimeout(180000); // 3 minutes
+	// Timeout for full game (reduced with test timings)
+	test.setTimeout(60000); // 1 minute
 
 	let players: PlayerContext[] = [];
 	let roomCode: string;
@@ -35,6 +41,8 @@ test.describe('Full Hot Takes game', () => {
 		for (const name of playerNames) {
 			const context = await browser.newContext();
 			const page = await context.newPage();
+			// Inject fast test timings before any navigation
+			await injectTestTimings(page);
 			players.push({ name, context, page });
 		}
 	});

@@ -27,6 +27,40 @@ import {
 	getRankedPlayers,
 } from './logic/scoring.js';
 import { MIN_PLAYERS, REVEAL_DISPLAY_MS } from './logic/constants.js';
+
+/**
+ * Test-mode overrides for faster E2E tests.
+ * Set these via window.__TEST_HOT_TAKES_* before navigating to the game.
+ */
+interface TestOverrides {
+	__TEST_HOT_TAKES_REVEAL_MS__?: number;
+	__TEST_HOT_TAKES_VOTING_SECONDS__?: number;
+	__TEST_HOT_TAKES_GUESSING_SECONDS__?: number;
+}
+
+function getRevealDisplayMs(): number {
+	if (typeof window !== 'undefined') {
+		const override = (window as unknown as TestOverrides).__TEST_HOT_TAKES_REVEAL_MS__;
+		if (override !== undefined && override > 0) return override;
+	}
+	return REVEAL_DISPLAY_MS;
+}
+
+function getEffectiveVotingTime(settingsValue: number): number {
+	if (typeof window !== 'undefined') {
+		const override = (window as unknown as TestOverrides).__TEST_HOT_TAKES_VOTING_SECONDS__;
+		if (override !== undefined && override > 0) return override;
+	}
+	return settingsValue;
+}
+
+function getEffectiveGuessingTime(settingsValue: number): number {
+	if (typeof window !== 'undefined') {
+		const override = (window as unknown as TestOverrides).__TEST_HOT_TAKES_GUESSING_SECONDS__;
+		if (override !== undefined && override > 0) return override;
+	}
+	return settingsValue;
+}
 import { HotTakesHost } from './networking/host.js';
 import { HotTakesPlayerNetwork } from './networking/player.js';
 
@@ -379,13 +413,14 @@ function startVotingPhase(): void {
 
 	// Start voting for first take
 	if (currentRound.currentTake) {
+		const votingTime = getEffectiveVotingTime(settings.votingTimeSeconds);
 		hostNetwork?.broadcastVotingStart(
 			currentRound.currentTake,
 			0,
 			takes.length,
-			settings.votingTimeSeconds
+			votingTime
 		);
-		startTimer(settings.votingTimeSeconds);
+		startTimer(votingTime);
 	}
 }
 
@@ -407,8 +442,9 @@ function endVotingPhase(): void {
 		phaseStartTime: Date.now(),
 	};
 
-	hostNetwork?.broadcastGuessingStart(takeId, votes, agreePercent, settings.guessingTimeSeconds);
-	startTimer(settings.guessingTimeSeconds);
+	const guessingTime = getEffectiveGuessingTime(settings.guessingTimeSeconds);
+	hostNetwork?.broadcastGuessingStart(takeId, votes, agreePercent, guessingTime);
+	startTimer(guessingTime);
 }
 
 function endGuessingPhase(): void {
@@ -437,7 +473,7 @@ function endGuessingPhase(): void {
 			playerScores
 		);
 
-		// Auto-advance after delay
+		// Auto-advance after delay (can be overridden for tests)
 		setTimeout(() => {
 			if (
 				hasMoreTakes({ phase, settings, players, takes, currentRound, takeResults, playerScores })
@@ -446,7 +482,7 @@ function endGuessingPhase(): void {
 			} else {
 				endGame();
 			}
-		}, REVEAL_DISPLAY_MS);
+		}, getRevealDisplayMs());
 	}
 }
 
@@ -471,13 +507,14 @@ function advanceToNextTakePhase(): void {
 
 	phase = 'voting';
 
+	const votingTime = getEffectiveVotingTime(settings.votingTimeSeconds);
 	hostNetwork?.broadcastVotingStart(
 		currentRound.currentTake!,
 		nextIndex,
 		takes.length,
-		settings.votingTimeSeconds
+		votingTime
 	);
-	startTimer(settings.votingTimeSeconds);
+	startTimer(votingTime);
 }
 
 function endGame(): void {

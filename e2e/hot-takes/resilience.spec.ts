@@ -1,4 +1,5 @@
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
+import { injectTestTimings, TEST_TIMINGS } from './test-helpers';
 
 /**
  * Hot Takes Resilience Tests
@@ -33,6 +34,8 @@ async function setupGameWithPlayers(
 	for (const name of playerNames) {
 		const context = await browser.newContext();
 		const page = await context.newPage();
+		// Inject fast test timings before any navigation
+		await injectTestTimings(page);
 		players.push({ name, context, page });
 	}
 
@@ -78,7 +81,7 @@ async function setupGameWithPlayers(
 }
 
 test.describe('Hot Takes resilience - Player disconnects', () => {
-	test.setTimeout(120000);
+	test.setTimeout(45000); // Reduced with test timings
 
 	test('game continues when a non-host player disconnects during lobby', async ({ browser }) => {
 		const { players } = await setupGameWithPlayers(browser, ['AAA', 'BBB', 'CCC']);
@@ -274,7 +277,7 @@ test.describe('Hot Takes resilience - Player disconnects', () => {
 });
 
 test.describe('Hot Takes resilience - Host disconnect', () => {
-	test.setTimeout(60000);
+	test.setTimeout(30000); // Reduced with test timings
 
 	test('players see error when host disconnects in lobby', async ({ browser }) => {
 		const { players } = await setupGameWithPlayers(browser, ['AAA', 'BBB', 'CCC']);
@@ -311,7 +314,7 @@ test.describe('Hot Takes resilience - Host disconnect', () => {
 });
 
 test.describe('Hot Takes resilience - Timer expiry', () => {
-	test.setTimeout(120000);
+	test.setTimeout(30000); // Reduced with test timings (timer is now 2s)
 
 	test('game advances when voting timer expires', async ({ browser }) => {
 		// This test requires setting a short voting time
@@ -365,7 +368,7 @@ test.describe('Hot Takes resilience - Timer expiry', () => {
 });
 
 test.describe('Hot Takes resilience - Late join attempts', () => {
-	test.setTimeout(60000);
+	test.setTimeout(30000); // Reduced with test timings
 
 	test('player cannot join game that has already started', async ({ browser }) => {
 		const { players, roomCode } = await setupGameWithPlayers(browser, ['AAA', 'BBB', 'CCC']);
@@ -407,7 +410,7 @@ test.describe('Hot Takes resilience - Late join attempts', () => {
 });
 
 test.describe('Hot Takes resilience - Duplicate sessions', () => {
-	test.setTimeout(60000);
+	test.setTimeout(30000); // Reduced with test timings
 
 	test('opening second browser window does not corrupt game state', async ({ browser }) => {
 		const { players, roomCode } = await setupGameWithPlayers(browser, ['AAA', 'BBB', 'CCC']);

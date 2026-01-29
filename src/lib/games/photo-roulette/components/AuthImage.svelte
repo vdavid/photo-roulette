@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import { fetchAuthenticatedImage, revokeBlobUrl } from '../photos/authenticated-fetch.js';
+	import { fetchAuthenticatedImage, revokeBlobUrl } from '$lib/games/photo-roulette';
 
 	interface Props {
 		src: string;

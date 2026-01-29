@@ -112,17 +112,17 @@
 			<div class="settings-panel">
 				<div class="setting">
 					<label for="rounds">Rounds</label>
-					<select id="rounds" value={settings.totalRounds} onchange={handleRoundsChange}>
+					<select id="rounds" onchange={handleRoundsChange}>
 						{#each ROUND_OPTIONS as option}
-							<option value={option}>{option}</option>
+							<option value={option} selected={option === settings.totalRounds}>{option}</option>
 						{/each}
 					</select>
 				</div>
 				<div class="setting">
 					<label for="timer">Timer (seconds)</label>
-					<select id="timer" value={settings.timerSeconds} onchange={handleTimerChange}>
+					<select id="timer" onchange={handleTimerChange}>
 						{#each TIMER_OPTIONS as option}
-							<option value={option}>{option}s</option>
+							<option value={option} selected={option === settings.timerSeconds}>{option}s</option>
 						{/each}
 					</select>
 				</div>

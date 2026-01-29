@@ -21,18 +21,21 @@
 		animation: spin 0.8s linear infinite;
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.sm {
 		width: 20px;
 		height: 20px;
 		border-width: 2px;
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.md {
 		width: 40px;
 		height: 40px;
 		border-width: 3px;
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.lg {
 		width: 64px;
 		height: 64px;

@@ -5,25 +5,25 @@
  */
 
 import type {
+	MediaItemsListResponse,
 	OAuthToken,
-	PickingSession,
 	PickedMediaItem,
 	PickedPhoto,
-	PickerResult,
-	PickerError,
-	PickerSessionState,
 	PickerCallbacks,
-	MediaItemsListResponse,
-} from './types.js';
+	PickerError,
+	PickerResult,
+	PickerSessionState,
+	PickingSession,
+} from './types.js'
 import {
-	PICKER_API_BASE_URL,
 	DEFAULT_MAX_PICK_COUNT,
-	MEDIA_ITEMS_PAGE_SIZE,
 	DEFAULT_POLL_INTERVAL_MS,
 	MAX_POLLING_TIMEOUT_MS,
+	MEDIA_ITEMS_PAGE_SIZE,
+	PICKER_API_BASE_URL,
 	PICKER_AUTOCLOSE_SUFFIX,
-} from './constants.js';
-import { getValidToken } from './oauth.js';
+} from './constants.js'
+import { getValidToken } from './oauth.js'
 
 /**
  * Parse duration string (e.g., "2s", "1800s") to milliseconds
@@ -123,7 +123,7 @@ export async function createSession(
 ): Promise<PickingSession> {
 	const requestId = crypto.randomUUID();
 
-	const session = await pickerApiRequest<PickingSession>(
+	return await pickerApiRequest<PickingSession>(
 		`/sessions?requestId=${requestId}`,
 		{
 			method: 'POST',
@@ -135,8 +135,6 @@ export async function createSession(
 		},
 		token
 	);
-
-	return session;
 }
 
 /**
@@ -185,7 +183,7 @@ export async function fetchAllMediaItems(
 	token?: OAuthToken
 ): Promise<PickedMediaItem[]> {
 	const allItems: PickedMediaItem[] = [];
-	let pageToken: string | undefined;
+	let pageToken: string | undefined = undefined;
 
 	do {
 		const response = await listMediaItems(sessionId, pageToken, token);
@@ -298,7 +296,7 @@ export async function pollSessionUntilComplete(
  * 4. Fetches selected photos
  * 5. Cleans up the session
  *
- * @param pickerWindow - A pre-opened window (call openBlankPickerWindow during user gesture)
+ * pickerWindow - A pre-opened window (call openBlankPickerWindow during user gesture)
  */
 export async function pickPhotos(
 	maxItemCount: number = DEFAULT_MAX_PICK_COUNT,
@@ -421,9 +419,7 @@ function isPickerError(error: unknown): error is PickerError {
 		typeof error === 'object' &&
 		error !== null &&
 		'type' in error &&
-		'message' in error &&
-		typeof (error as PickerError).type === 'string' &&
-		typeof (error as PickerError).message === 'string'
+		'message' in error
 	);
 }
 

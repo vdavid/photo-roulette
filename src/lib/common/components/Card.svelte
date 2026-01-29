@@ -20,18 +20,22 @@
 		box-shadow: var(--shadow-md);
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.padding-none {
 		padding: 0;
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.padding-sm {
 		padding: var(--space-md);
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.padding-md {
 		padding: var(--space-lg);
 	}
 
+	/*noinspection CssUnusedSymbol*/
 	.padding-lg {
 		padding: var(--space-xl);
 	}
