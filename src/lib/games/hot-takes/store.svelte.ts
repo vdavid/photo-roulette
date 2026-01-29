@@ -60,7 +60,7 @@ let myEmoji = $state<AnimalEmoji>('🐰');
 
 // Timer state
 let timerEndTime = $state<number | null>(null);
-let timerIntervalId: ReturnType<typeof setInterval> | null = null;
+let timerIntervalId: ReturnType<typeof setTimeout> | null = null;
 
 // My submitted takes (local tracking)
 let mySubmittedTakes = $state<Array<{ id: string; text: string }>>([]);
@@ -115,7 +115,7 @@ function generateTakeId(): string {
 
 function clearTimer(): void {
 	if (timerIntervalId) {
-		clearInterval(timerIntervalId);
+		clearTimeout(timerIntervalId);
 		timerIntervalId = null;
 	}
 	timerEndTime = null;
@@ -124,6 +124,48 @@ function clearTimer(): void {
 function startTimer(durationSeconds: number): void {
 	clearTimer();
 	timerEndTime = Date.now() + durationSeconds * 1000;
+
+	// Set up auto-advance when timer expires (host only)
+	if (role === 'host') {
+		timerIntervalId = setTimeout(() => {
+			handleTimerExpiry();
+		}, durationSeconds * 1000);
+	}
+}
+
+function handleTimerExpiry(): void {
+	if (!isHost) return;
+
+	if (phase === 'voting') {
+		endVotingPhase();
+	} else if (phase === 'guessing') {
+		endGuessingPhase();
+	}
+}
+
+function checkPhaseAdvancement(): void {
+	if (!isHost || !currentRound) return;
+
+	// Get currently connected active players
+	const connectedActivePlayers = players.filter((p) => !p.isSpectator && p.isConnected);
+
+	if (phase === 'voting') {
+		const votedPlayerIds = new Set(currentRound.votes.map((v) => v.playerId));
+		const allVoted = connectedActivePlayers.every((p) => votedPlayerIds.has(p.id));
+		if (allVoted) {
+			endVotingPhase();
+		}
+	} else if (phase === 'guessing') {
+		const currentTakeData = takes[currentRound.takeIndex];
+		const guessedPlayerIds = new Set(currentRound.guesses.map((g) => g.playerId));
+		const playersWhoShouldGuess = connectedActivePlayers.filter(
+			(p) => p.id !== currentTakeData?.authorId
+		);
+		const allGuessed = playersWhoShouldGuess.every((p) => guessedPlayerIds.has(p.id));
+		if (allGuessed) {
+			endGuessingPhase();
+		}
+	}
 }
 
 // ============================================
@@ -216,6 +258,9 @@ function setupHostEvents(): void {
 	hostNetwork.on('playerDisconnected', (playerId) => {
 		players = players.map((p) => (p.id === playerId ? { ...p, isConnected: false } : p));
 		hostNetwork!.broadcastPlayerLeft(playerId);
+
+		// Check if we should advance the phase now that a player disconnected
+		checkPhaseAdvancement();
 	});
 
 	hostNetwork.on('playerReconnected', (playerId) => {
