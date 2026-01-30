@@ -37,8 +37,26 @@ export const MAX_RECONNECT_ATTEMPTS = 5;
 export const PEERJS_CONFIG = {
 	// Using PeerJS Cloud (free signaling server)
 	// No host/port needed - PeerJS handles it automatically
-	debug: 2, // 0: off, 1: errors, 2: warnings, 3: all
+	debug: 0, // 0: off, 1: errors, 2: warnings, 3: all (reduced for cleaner test output)
 };
 
-/** Prefix for peer IDs to avoid collisions */
-export const PEER_ID_PREFIX = 'partygames-';
+/** Default prefix for peer IDs to avoid collisions */
+const DEFAULT_PEER_ID_PREFIX = 'partygames-';
+
+/**
+ * Get the peer ID prefix, allowing test overrides for parallel execution.
+ * Tests can set window.__TEST_PEER_ID_PREFIX__ to use a worker-specific prefix.
+ */
+export function getPeerIdPrefix(): string {
+	if (typeof window !== 'undefined') {
+		const testPrefix = (window as unknown as { __TEST_PEER_ID_PREFIX__?: string })
+			.__TEST_PEER_ID_PREFIX__;
+		if (testPrefix) {
+			return testPrefix;
+		}
+	}
+	return DEFAULT_PEER_ID_PREFIX;
+}
+
+/** @deprecated Use getPeerIdPrefix() for test support */
+export const PEER_ID_PREFIX = DEFAULT_PEER_ID_PREFIX;

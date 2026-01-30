@@ -1,4 +1,5 @@
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
+import { injectTestConfig, injectTestConfigToContext } from './test-helpers';
 
 // Helper to navigate to Hot Takes from game selector
 async function selectHotTakes(page: Page) {
@@ -13,7 +14,9 @@ interface PlayerContext {
 }
 
 test.describe('Hot Takes landing page', () => {
-	test('shows welcome screen with host and join options', async ({ page }) => {
+	test('shows welcome screen with host and join options', async ({ page }, testInfo) => {
+		// Inject config to context, not page - works better with Playwright fixtures
+		await injectTestConfigToContext(page.context(), testInfo.parallelIndex);
 		await page.goto('/');
 		await selectHotTakes(page);
 
@@ -28,7 +31,8 @@ test.describe('Hot Takes landing page', () => {
 		await expect(page.getByLabel('Your name')).toBeVisible();
 	});
 
-	test('can create a game from landing page', async ({ page }) => {
+	test('can create a game from landing page', async ({ page }, testInfo) => {
+		await injectTestConfigToContext(page.context(), testInfo.parallelIndex);
 		await page.goto('/');
 		await selectHotTakes(page);
 
@@ -53,7 +57,8 @@ test.describe('Hot Takes landing page', () => {
 });
 
 test.describe('Hot Takes lobby', () => {
-	test('can create a game and enter lobby', async ({ page }) => {
+	test('can create a game and enter lobby', async ({ page }, testInfo) => {
+		await injectTestConfigToContext(page.context(), testInfo.parallelIndex);
 		await page.goto('/');
 		await selectHotTakes(page);
 
@@ -87,7 +92,8 @@ test.describe('Hot Takes lobby', () => {
 		await expect(startButton).toBeDisabled();
 	});
 
-	test('can leave the game from lobby', async ({ page }) => {
+	test('can leave the game from lobby', async ({ page }, testInfo) => {
+		await injectTestConfigToContext(page.context(), testInfo.parallelIndex);
 		await page.goto('/');
 		await selectHotTakes(page);
 
@@ -107,15 +113,27 @@ test.describe('Hot Takes lobby', () => {
 });
 
 test.describe('Hot Takes multiplayer lobby', () => {
+	// Skip in CI - multi-browser tests need real PeerJS which requires network access
+	test.skip(!!process.env.CI, 'Multi-browser tests require real PeerJS network access');
+
+	// Use serial to prevent parallel execution of steps in this describe block
+	test.describe.configure({ mode: 'serial' });
+
 	let players: PlayerContext[] = [];
 	let roomCode: string;
 
-	test.beforeAll(async ({ browser }) => {
+	test.beforeAll(async ({ browser }, testInfo) => {
 		// Create 3 browser contexts for 3 players
 		const playerNames = ['AAA', 'BBB', 'CCC'];
+		const workerIndex = testInfo.parallelIndex;
 
 		for (const name of playerNames) {
 			const context = await browser.newContext();
+			// Use real PeerJS for multi-browser tests (mock only works within single context)
+			await injectTestConfigToContext(context, {
+				useRealPeerJS: true,
+				workerIndex,
+			});
 			const page = await context.newPage();
 			players.push({ name, context, page });
 		}

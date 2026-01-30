@@ -3,7 +3,7 @@
  * Shared across all games
  */
 
-import { ROOM_CODE_CHARS, ROOM_CODE_LENGTH, PEER_ID_PREFIX } from './constants.js';
+import { ROOM_CODE_CHARS, ROOM_CODE_LENGTH, getPeerIdPrefix } from './constants.js';
 
 /**
  * Generate a random room code
@@ -48,15 +48,16 @@ export function normalizeRoomCode(code: string): string {
  * Convert a room code to a PeerJS peer ID
  */
 export function roomCodeToPeerId(roomCode: string): string {
-	return `${PEER_ID_PREFIX}${normalizeRoomCode(roomCode)}`;
+	return `${getPeerIdPrefix()}${normalizeRoomCode(roomCode)}`;
 }
 
 /**
  * Extract room code from a PeerJS peer ID
  */
 export function peerIdToRoomCode(peerId: string): string | null {
-	if (!peerId.startsWith(PEER_ID_PREFIX)) {
+	const prefix = getPeerIdPrefix();
+	if (!peerId.startsWith(prefix)) {
 		return null;
 	}
-	return peerId.slice(PEER_ID_PREFIX.length);
+	return peerId.slice(prefix.length);
 }

@@ -3,7 +3,7 @@
  * Shared across all games
  */
 
-import Peer, { type DataConnection } from 'peerjs';
+import PeerImport, { type DataConnection } from 'peerjs';
 import type { PlayerId, BaseMessage, ConnectionState, PeerConnection } from './types.js';
 import {
 	PEERJS_CONFIG,
@@ -14,6 +14,19 @@ import {
 } from './constants.js';
 import { roomCodeToPeerId } from './room-code.js';
 import { getLogger } from '$lib/common/logging.js';
+
+/**
+ * Get the Peer constructor, allowing window.Peer override for testing.
+ * Must be a function so the check happens at runtime after addInitScript runs.
+ */
+function getPeerConstructor(): typeof PeerImport {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	if (typeof window !== 'undefined' && (window as any).__PEERJS_MOCKED__) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		return (window as any).Peer;
+	}
+	return PeerImport;
+}
 
 const logger = getLogger(['networking', 'peer-manager']);
 
@@ -217,7 +230,8 @@ export class PeerManager {
 				reject(new Error('Peer initialization timeout'));
 			}, CONNECTION_TIMEOUT_MS);
 
-			this.peer = peerId ? new Peer(peerId, PEERJS_CONFIG) : new Peer(PEERJS_CONFIG);
+			const PeerClass = getPeerConstructor();
+			this.peer = peerId ? new PeerClass(peerId, PEERJS_CONFIG) : new PeerClass(PEERJS_CONFIG);
 
 			this.peer.on('open', (id) => {
 				clearTimeout(timeout);

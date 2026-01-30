@@ -2,12 +2,12 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
 	testDir: './e2e',
-	// Run tests sequentially to avoid PeerJS connection conflicts
-	// The full-game test already uses 4 browser contexts internally
-	fullyParallel: false,
+	// Enable parallel execution with unique peer ID prefixes per worker
+	fullyParallel: true,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
-	workers: 1,
+	// Use 2 parallel workers (more causes dev server contention)
+	workers: 2,
 	reporter: 'html',
 	use: {
 		baseURL: 'http://localhost:5173',

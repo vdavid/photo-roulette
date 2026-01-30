@@ -1,5 +1,5 @@
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
-import { injectTestTimings } from './test-helpers';
+import { injectTestConfigToContext } from './test-helpers';
 
 /**
  * Full Hot Takes game E2E test with 3 players
@@ -17,11 +17,6 @@ async function selectHotTakes(page: Page) {
 	await expect(page.getByRole('heading', { name: 'Hot Takes' })).toBeVisible();
 }
 
-// Helper to set up a page with test timings (for potential future use)
-async function _setupPage(page: Page) {
-	await injectTestTimings(page);
-}
-
 interface PlayerContext {
 	name: string;
 	context: BrowserContext;
@@ -29,20 +24,28 @@ interface PlayerContext {
 }
 
 test.describe('Full Hot Takes game', () => {
+	// Skip in CI - multi-browser tests need real PeerJS which requires network access
+	// Run locally with: pnpm exec playwright test e2e/hot-takes/full-game.spec.ts
+	test.skip(!!process.env.CI, 'Multi-browser tests require real PeerJS network access');
+
 	// Timeout for full game (reduced with test timings)
 	test.setTimeout(60000); // 1 minute
 
 	let players: PlayerContext[] = [];
 	let roomCode: string;
 
-	test.beforeAll(async ({ browser }) => {
+	test.beforeAll(async ({ browser }, testInfo) => {
 		const playerNames = ['AAA', 'BBB', 'CCC'];
+		const workerIndex = testInfo.parallelIndex;
 
 		for (const name of playerNames) {
 			const context = await browser.newContext();
+			// Use real PeerJS for multi-browser tests (mock only works within single context)
+			await injectTestConfigToContext(context, {
+				useRealPeerJS: true,
+				workerIndex,
+			});
 			const page = await context.newPage();
-			// Inject fast test timings before any navigation
-			await injectTestTimings(page);
 			players.push({ name, context, page });
 		}
 	});
@@ -309,15 +312,24 @@ test.describe('Full Hot Takes game', () => {
 });
 
 test.describe('Hot Takes edge cases', () => {
+	// Skip in CI - multi-browser tests need real PeerJS which requires network access
+	test.skip(!!process.env.CI, 'Multi-browser tests require real PeerJS network access');
+
 	test.setTimeout(120000);
 
-	test('game handles unanimous votes', async ({ browser }) => {
+	test('game handles unanimous votes', async ({ browser }, testInfo) => {
 		// Create 3 browser contexts
 		const players: PlayerContext[] = [];
 		const playerNames = ['AAA', 'BBB', 'CCC'];
+		const workerIndex = testInfo.parallelIndex;
 
 		for (const name of playerNames) {
 			const context = await browser.newContext();
+			// Use real PeerJS for multi-browser tests (mock only works within single context)
+			await injectTestConfigToContext(context, {
+				useRealPeerJS: true,
+				workerIndex,
+			});
 			const page = await context.newPage();
 			players.push({ name, context, page });
 		}

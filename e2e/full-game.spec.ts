@@ -37,6 +37,10 @@ interface PlayerContext {
 }
 
 test.describe('Full 4-player game', () => {
+	// Skip in CI - multi-browser tests need real PeerJS which requires network access
+	// Run locally with: pnpm exec playwright test e2e/full-game.spec.ts
+	test.skip(!!process.env.CI, 'Multi-browser tests require real PeerJS network access');
+
 	// Timeout for full game with fast result display
 	// 8 rounds * ~6s (5s timer + 0.5s results) + setup = ~60s
 	test.setTimeout(90000); // 90 seconds

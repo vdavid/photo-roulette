@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { injectTestConfigToContext } from './test-helpers';
 
 // Helper to navigate to Photo Roulette from game selector
 async function selectPhotoRoulette(page: import('@playwright/test').Page) {
@@ -9,6 +10,7 @@ async function selectPhotoRoulette(page: import('@playwright/test').Page) {
 
 test.describe('Photo Roulette host game flow', () => {
 	test('can create a game and enter lobby', async ({ page }) => {
+		await injectTestConfigToContext(page.context());
 		await selectPhotoRoulette(page);
 
 		// Navigate to host form
@@ -49,6 +51,7 @@ test.describe('Photo Roulette host game flow', () => {
 	});
 
 	test('can copy room code', async ({ page }) => {
+		await injectTestConfigToContext(page.context());
 		await selectPhotoRoulette(page);
 
 		// Create a game
@@ -68,6 +71,7 @@ test.describe('Photo Roulette host game flow', () => {
 	});
 
 	test('host is shown in player list with host badge', async ({ page }) => {
+		await injectTestConfigToContext(page.context());
 		await selectPhotoRoulette(page);
 
 		// Create a game
@@ -87,6 +91,7 @@ test.describe('Photo Roulette host game flow', () => {
 	});
 
 	test('can leave the game from lobby', async ({ page }) => {
+		await injectTestConfigToContext(page.context());
 		await selectPhotoRoulette(page);
 
 		// Create a game
@@ -106,6 +111,7 @@ test.describe('Photo Roulette host game flow', () => {
 	});
 
 	test('can change game settings', async ({ page }) => {
+		await injectTestConfigToContext(page.context());
 		await selectPhotoRoulette(page);
 
 		// Create a game
