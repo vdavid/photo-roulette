@@ -1,6 +1,8 @@
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
 import { injectTestConfigToContext } from './test-helpers';
 
+const BASE_WS_PORT = 9876;
+
 /**
  * Full Hot Takes game E2E test with 3 players
  *
@@ -11,10 +13,10 @@ import { injectTestConfigToContext } from './test-helpers';
  * - Verification of scores and results
  */
 
-// Helper to navigate to Hot Takes from game selector
+// Helper to navigate directly to Hot Takes landing page
 async function selectHotTakes(page: Page) {
-	await page.locator('.game-card').filter({ hasText: 'Hot Takes' }).click();
-	await expect(page.getByRole('heading', { name: 'Hot Takes' })).toBeVisible();
+	await page.goto('/?game=hot-takes');
+	await expect(page.getByRole('button', { name: 'Host game' })).toBeVisible();
 }
 
 interface PlayerContext {
@@ -24,39 +26,28 @@ interface PlayerContext {
 }
 
 test.describe('Full Hot Takes game', () => {
-	// Skip in CI - multi-browser tests need real PeerJS which requires network access
-	// Run locally with: pnpm exec playwright test e2e/hot-takes/full-game.spec.ts
-	test.skip(!!process.env.CI, 'Multi-browser tests require real PeerJS network access');
-
 	// Timeout for full game (reduced with test timings)
 	test.setTimeout(60000); // 1 minute
 
-	let players: PlayerContext[] = [];
-	let roomCode: string;
-
-	test.beforeAll(async ({ browser }, testInfo) => {
+	test('plays a complete Hot Takes game', async ({ browser }, testInfo) => {
+		const players: PlayerContext[] = [];
 		const playerNames = ['AAA', 'BBB', 'CCC'];
-		const workerIndex = testInfo.parallelIndex;
+		const bridgePort = BASE_WS_PORT + testInfo.parallelIndex;
 
 		for (const name of playerNames) {
 			const context = await browser.newContext();
-			// Use real PeerJS for multi-browser tests (mock only works within single context)
+			// Use WebSocket bridge for multi-browser tests
 			await injectTestConfigToContext(context, {
-				useRealPeerJS: true,
-				workerIndex,
+				multiBrowser: true,
+				bridgePort,
 			});
 			const page = await context.newPage();
 			players.push({ name, context, page });
 		}
-	});
 
-	test.afterAll(async () => {
-		for (const player of players) {
-			await player.context.close();
-		}
-	});
+		let roomCode: string;
 
-	test('plays a complete Hot Takes game', async () => {
+		try {
 		const [host, player2, player3] = players;
 
 		// === PHASE 1: Host creates game ===
@@ -308,12 +299,17 @@ test.describe('Full Hot Takes game', () => {
 		});
 
 		console.log('Hot Takes full game test completed successfully!');
+		} finally {
+			for (const player of players) {
+				await player.context.close();
+			}
+		}
 	});
 });
 
 test.describe('Hot Takes edge cases', () => {
 	// Skip in CI - multi-browser tests need real PeerJS which requires network access
-	test.skip(!!process.env.CI, 'Multi-browser tests require real PeerJS network access');
+	// All tests now use mock - no skip needed
 
 	test.setTimeout(120000);
 
@@ -321,14 +317,14 @@ test.describe('Hot Takes edge cases', () => {
 		// Create 3 browser contexts
 		const players: PlayerContext[] = [];
 		const playerNames = ['AAA', 'BBB', 'CCC'];
-		const workerIndex = testInfo.parallelIndex;
+		const bridgePort = BASE_WS_PORT + testInfo.parallelIndex;
 
 		for (const name of playerNames) {
 			const context = await browser.newContext();
-			// Use real PeerJS for multi-browser tests (mock only works within single context)
+			// Use WebSocket bridge for multi-browser tests
 			await injectTestConfigToContext(context, {
-				useRealPeerJS: true,
-				workerIndex,
+				multiBrowser: true,
+				bridgePort,
 			});
 			const page = await context.newPage();
 			players.push({ name, context, page });
@@ -338,7 +334,6 @@ test.describe('Hot Takes edge cases', () => {
 			const [host, player2, player3] = players;
 
 			// Create game
-			await host.page.goto('/');
 			await selectHotTakes(host.page);
 			await host.page.getByLabel('Your name').fill(host.name);
 			await host.page.getByRole('button', { name: 'Host game' }).click();
@@ -348,7 +343,6 @@ test.describe('Hot Takes edge cases', () => {
 
 			// Other players join
 			for (const player of [player2, player3]) {
-				await player.page.goto('/');
 				await selectHotTakes(player.page);
 				await player.page.getByLabel('Your name').fill(player.name);
 				await player.page.locator('input[placeholder="CODE"]').fill(roomCode);

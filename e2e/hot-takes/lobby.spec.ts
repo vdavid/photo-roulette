@@ -1,10 +1,12 @@
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
-import { injectTestConfig, injectTestConfigToContext } from './test-helpers';
+import { injectTestConfigToContext } from './test-helpers';
 
-// Helper to navigate to Hot Takes from game selector
+const BASE_WS_PORT = 9876;
+
+// Helper to navigate directly to Hot Takes landing page
 async function selectHotTakes(page: Page) {
-	await page.locator('.game-card').filter({ hasText: 'Hot Takes' }).click();
-	await expect(page.getByRole('heading', { name: 'Hot Takes' })).toBeVisible();
+	await page.goto('/?game=hot-takes');
+	await expect(page.getByRole('button', { name: 'Host game' })).toBeVisible();
 }
 
 interface PlayerContext {
@@ -113,8 +115,7 @@ test.describe('Hot Takes lobby', () => {
 });
 
 test.describe('Hot Takes multiplayer lobby', () => {
-	// Skip in CI - multi-browser tests need real PeerJS which requires network access
-	test.skip(!!process.env.CI, 'Multi-browser tests require real PeerJS network access');
+	// All tests now use WebSocket bridge mock - no skip needed
 
 	// Use serial to prevent parallel execution of steps in this describe block
 	test.describe.configure({ mode: 'serial' });
@@ -125,14 +126,14 @@ test.describe('Hot Takes multiplayer lobby', () => {
 	test.beforeAll(async ({ browser }, testInfo) => {
 		// Create 3 browser contexts for 3 players
 		const playerNames = ['AAA', 'BBB', 'CCC'];
-		const workerIndex = testInfo.parallelIndex;
+		const bridgePort = BASE_WS_PORT + testInfo.parallelIndex;
 
 		for (const name of playerNames) {
 			const context = await browser.newContext();
-			// Use real PeerJS for multi-browser tests (mock only works within single context)
+			// Use WebSocket bridge for multi-browser tests
 			await injectTestConfigToContext(context, {
-				useRealPeerJS: true,
-				workerIndex,
+				multiBrowser: true,
+				bridgePort,
 			});
 			const page = await context.newPage();
 			players.push({ name, context, page });

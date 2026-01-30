@@ -1,5 +1,7 @@
-import { test, expect, type Page, type BrowserContext, type TestInfo } from '@playwright/test';
+import { test, expect, type Page, type BrowserContext } from '@playwright/test';
 import { injectTestConfigToContext } from './test-helpers';
+
+const BASE_WS_PORT = 9876;
 
 /**
  * Hot Takes Resilience Tests
@@ -13,10 +15,11 @@ import { injectTestConfigToContext } from './test-helpers';
  * These are critical for a smooth demo experience!
  */
 
-// Helper to navigate to Hot Takes from game selector
+// Helper to navigate directly to Hot Takes landing page
 async function selectHotTakes(page: Page) {
-	await page.locator('.game-card').filter({ hasText: 'Hot Takes' }).click();
-	await expect(page.getByRole('heading', { name: 'Hot Takes' })).toBeVisible();
+	// Navigate directly to avoid game selector click issues
+	await page.goto('/?game=hot-takes');
+	await expect(page.getByRole('button', { name: 'Host game' })).toBeVisible();
 }
 
 interface PlayerContext {
@@ -28,22 +31,25 @@ interface PlayerContext {
 async function setupGameWithPlayers(
 	browser: import('@playwright/test').Browser,
 	playerNames: string[],
-	workerIndex: number
+	parallelIndex: number
 ): Promise<{ players: PlayerContext[]; roomCode: string }> {
 	const players: PlayerContext[] = [];
+	const bridgePort = BASE_WS_PORT + parallelIndex;
 
 	for (const name of playerNames) {
 		const context = await browser.newContext();
-		// Inject test config (timings + PeerJS) into context
-		await injectTestConfigToContext(context, workerIndex);
+		// Use WebSocket bridge for multi-browser tests
+		await injectTestConfigToContext(context, {
+			multiBrowser: true,
+			bridgePort,
+		});
 		const page = await context.newPage();
 		players.push({ name, context, page });
 	}
 
 	const [host, ...others] = players;
 
-	// Host creates game
-	await host.page.goto('/');
+	// Host creates game - navigate directly to Hot Takes
 	await selectHotTakes(host.page);
 	await host.page.getByLabel('Your name').fill(host.name);
 	await host.page.getByRole('button', { name: 'Host game' }).click();
@@ -51,9 +57,8 @@ async function setupGameWithPlayers(
 
 	const roomCode = (await host.page.locator('.code-value').textContent()) || '';
 
-	// Others join
+	// Others join - navigate directly to Hot Takes
 	for (const player of others) {
-		await player.page.goto('/');
 		await selectHotTakes(player.page);
 		await player.page.getByLabel('Your name').fill(player.name);
 		await player.page.locator('input[placeholder="CODE"]').fill(roomCode);
@@ -84,7 +89,7 @@ async function setupGameWithPlayers(
 // All resilience tests are multi-browser tests that require real PeerJS
 // Skip in CI - run locally for full testing
 test.describe('Hot Takes resilience - Player disconnects', () => {
-	test.skip(!!process.env.CI, 'Multi-browser tests require real PeerJS network access');
+	// All tests now use WebSocket bridge mock - no skip needed
 	test.setTimeout(45000); // Reduced with test timings
 
 	test('game continues when a non-host player disconnects during lobby', async ({ browser }, testInfo) => {
@@ -281,8 +286,8 @@ test.describe('Hot Takes resilience - Player disconnects', () => {
 });
 
 test.describe('Hot Takes resilience - Host disconnect', () => {
-	test.skip(!!process.env.CI, 'Multi-browser tests require real PeerJS network access');
-	test.setTimeout(30000); // Reduced with test timings
+	// All tests now use WebSocket bridge mock - no skip needed
+	test.setTimeout(45000); // Need more time for 3-player setup plus disconnect propagation
 
 	test('players see error when host disconnects in lobby', async ({ browser }, testInfo) => {
 		const { players } = await setupGameWithPlayers(browser, ['AAA', 'BBB', 'CCC'], testInfo.parallelIndex);
@@ -296,17 +301,18 @@ test.describe('Hot Takes resilience - Host disconnect', () => {
 			await player2.page.waitForTimeout(5000);
 
 			// Players should see some indication the connection is lost
-			// This could be an error message, disconnect indicator, or redirect
+			// This could be an error message, reconnecting state, or lobby still visible
 			// The exact behavior depends on implementation
 			const hasError = await player2.page.getByText(/disconnect|error|lost/i).isVisible();
+			const hasReconnecting = await player2.page.getByText(/reconnecting/i).isVisible();
 			const hasLobby = await player2.page.getByText('Room code').isVisible();
 
-			// Either there's an error shown, or the lobby is still visible (possibly with host marked disconnected)
-			expect(hasError || hasLobby).toBe(true);
+			// Either there's an error shown, reconnecting state, or the lobby is still visible
+			expect(hasError || hasReconnecting || hasLobby).toBe(true);
 
 			console.log(
 				'Player UI remained stable after host disconnect:',
-				hasError ? 'error shown' : 'lobby still visible'
+				hasError ? 'error shown' : hasReconnecting ? 'reconnecting' : 'lobby still visible'
 			);
 		} finally {
 			for (const player of players) {
@@ -319,12 +325,12 @@ test.describe('Hot Takes resilience - Host disconnect', () => {
 });
 
 test.describe('Hot Takes resilience - Timer expiry', () => {
-	test.skip(!!process.env.CI, 'Multi-browser tests require real PeerJS network access');
+	// All tests now use WebSocket bridge mock - no skip needed
 	test.setTimeout(30000); // Reduced with test timings (timer is now 2s)
 
-	test('game advances when voting timer expires', async ({ browser }) => {
+	test('game advances when voting timer expires', async ({ browser }, testInfo) => {
 		// This test requires setting a short voting time
-		const { players } = await setupGameWithPlayers(browser, ['AAA', 'BBB', 'CCC']);
+		const { players } = await setupGameWithPlayers(browser, ['AAA', 'BBB', 'CCC'], testInfo.parallelIndex);
 		const [host] = players;
 
 		try {
@@ -374,16 +380,20 @@ test.describe('Hot Takes resilience - Timer expiry', () => {
 });
 
 test.describe('Hot Takes resilience - Late join attempts', () => {
-	test.skip(!!process.env.CI, 'Multi-browser tests require real PeerJS network access');
+	// All tests now use WebSocket bridge mock - no skip needed
 	test.setTimeout(30000); // Reduced with test timings
 
 	test('player cannot join game that has already started', async ({ browser }, testInfo) => {
+		const bridgePort = BASE_WS_PORT + testInfo.parallelIndex;
 		const { players, roomCode } = await setupGameWithPlayers(browser, ['AAA', 'BBB', 'CCC'], testInfo.parallelIndex);
 		const [host] = players;
 
-		// Create a late joiner with PeerJS config
+		// Create a late joiner with WebSocket bridge config
 		const lateContext = await browser.newContext();
-		await injectTestConfigToContext(lateContext, testInfo.parallelIndex);
+		await injectTestConfigToContext(lateContext, {
+			multiBrowser: true,
+			bridgePort,
+		});
 		const latePage = await lateContext.newPage();
 
 		try {
@@ -416,10 +426,11 @@ test.describe('Hot Takes resilience - Late join attempts', () => {
 });
 
 test.describe('Hot Takes resilience - Duplicate sessions', () => {
-	test.skip(!!process.env.CI, 'Multi-browser tests require real PeerJS network access');
+	// All tests now use WebSocket bridge mock - no skip needed
 	test.setTimeout(30000); // Reduced with test timings
 
 	test('opening second browser window does not corrupt game state', async ({ browser }, testInfo) => {
+		const bridgePort = BASE_WS_PORT + testInfo.parallelIndex;
 		const { players, roomCode } = await setupGameWithPlayers(browser, ['AAA', 'BBB', 'CCC'], testInfo.parallelIndex);
 		const [host] = players;
 
@@ -427,7 +438,10 @@ test.describe('Hot Takes resilience - Duplicate sessions', () => {
 			// Player 2 opens a second browser window with same session
 			// (simulating accidental tab duplication)
 			const secondContext = await browser.newContext();
-			await injectTestConfigToContext(secondContext, testInfo.parallelIndex);
+			await injectTestConfigToContext(secondContext, {
+				multiBrowser: true,
+				bridgePort,
+			});
 			const secondPage = await secondContext.newPage();
 
 			await secondPage.goto('/');

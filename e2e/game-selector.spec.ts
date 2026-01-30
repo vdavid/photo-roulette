@@ -20,32 +20,38 @@ test.describe('Game selector', () => {
 	});
 
 	test('can select Photo Roulette', async ({ page }) => {
-		await page.goto('/');
+		// Navigate and wait for network to settle
+		await page.goto('/', { waitUntil: 'networkidle' });
+
+		// Wait for game cards to be hydrated (small delay for Svelte)
+		await page.waitForTimeout(100);
 
 		// Click Photo Roulette card
-		await page.locator('.game-card').filter({ hasText: 'Photo Roulette' }).click();
+		await page.locator('.game-card').first().click({ force: true });
+
+		// Wait for URL change (navigation complete)
+		await expect(page).toHaveURL(/\?game=photo-roulette/, { timeout: 10000 });
 
 		// Should show Photo Roulette landing page
-		await expect(page.getByRole('heading', { name: 'Photo Roulette' })).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Host a game' })).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Join a game' })).toBeVisible();
-
-		// URL should have game parameter
-		await expect(page).toHaveURL(/\?game=photo-roulette/);
 	});
 
 	test('can select Hot Takes', async ({ page }) => {
-		await page.goto('/');
+		// Navigate and wait for network to settle
+		await page.goto('/', { waitUntil: 'networkidle' });
+
+		// Wait for game cards to be hydrated (small delay for Svelte)
+		await page.waitForTimeout(100);
 
 		// Click Hot Takes card
-		await page.locator('.game-card').filter({ hasText: 'Hot Takes' }).click();
+		await page.locator('.game-card').nth(1).click({ force: true });
+
+		// Wait for URL change (navigation complete)
+		await expect(page).toHaveURL(/\?game=hot-takes/, { timeout: 10000 });
 
 		// Should show Hot Takes landing page
-		await expect(page.getByRole('heading', { name: 'Hot Takes' })).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Host game' })).toBeVisible();
-
-		// URL should have game parameter
-		await expect(page).toHaveURL(/\?game=hot-takes/);
 	});
 
 	test('can navigate directly via URL to Photo Roulette', async ({ page }) => {

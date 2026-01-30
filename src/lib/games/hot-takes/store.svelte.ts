@@ -337,10 +337,21 @@ function setupHostEvents(): void {
 	hostNetwork.on('voteReceived', (vote) => {
 		if (!currentRound) return;
 
-		currentRound = {
-			...currentRound,
-			votes: [...currentRound.votes, vote],
-		};
+		// Check if player already voted - update their vote instead of adding duplicate
+		const existingVoteIndex = currentRound.votes.findIndex((v) => v.playerId === vote.playerId);
+		if (existingVoteIndex !== -1) {
+			const updatedVotes = [...currentRound.votes];
+			updatedVotes[existingVoteIndex] = vote;
+			currentRound = {
+				...currentRound,
+				votes: updatedVotes,
+			};
+		} else {
+			currentRound = {
+				...currentRound,
+				votes: [...currentRound.votes, vote],
+			};
+		}
 
 		// Check if all players have voted
 		const votedPlayerIds = new Set(currentRound.votes.map((v) => v.playerId));
@@ -354,10 +365,21 @@ function setupHostEvents(): void {
 	hostNetwork.on('guessReceived', (guess) => {
 		if (!currentRound) return;
 
-		currentRound = {
-			...currentRound,
-			guesses: [...currentRound.guesses, guess],
-		};
+		// Check if player already guessed - update their guess instead of adding duplicate
+		const existingGuessIndex = currentRound.guesses.findIndex((g) => g.playerId === guess.playerId);
+		if (existingGuessIndex !== -1) {
+			const updatedGuesses = [...currentRound.guesses];
+			updatedGuesses[existingGuessIndex] = guess;
+			currentRound = {
+				...currentRound,
+				guesses: updatedGuesses,
+			};
+		} else {
+			currentRound = {
+				...currentRound,
+				guesses: [...currentRound.guesses, guess],
+			};
+		}
 
 		// Check if all players (except author) have guessed
 		const currentTakeData = takes[currentRound.takeIndex];
@@ -602,7 +624,23 @@ function setupPlayerEvents(): void {
 	});
 
 	playerNetwork.on('playerUpdate', (playerId, updates) => {
-		players = players.map((p) => (p.id === playerId ? { ...p, ...updates } : p));
+		const existingPlayer = players.find((p) => p.id === playerId);
+		if (existingPlayer) {
+			// Update existing player
+			players = players.map((p) => (p.id === playerId ? { ...p, ...updates } : p));
+		} else {
+			// New player joined - add them to the list
+			const newPlayer: HotTakesPlayer = {
+				id: playerId,
+				name: updates.name ?? 'Unknown',
+				emoji: updates.emoji ?? '🐰',
+				isReady: updates.isReady ?? false,
+				isSpectator: updates.isSpectator ?? false,
+				takeIds: [],
+				isConnected: true,
+			};
+			players = [...players, newPlayer];
+		}
 	});
 
 	playerNetwork.on('playerLeft', (playerId) => {
@@ -747,10 +785,22 @@ function submitVote(vote: 'agree' | 'disagree'): void {
 			takeId,
 			vote,
 		};
-		currentRound = {
-			...currentRound,
-			votes: [...currentRound.votes, voteData],
-		};
+
+		// Check if already voted - update instead of adding duplicate
+		const existingVoteIndex = currentRound.votes.findIndex((v) => v.playerId === myPlayerId);
+		if (existingVoteIndex !== -1) {
+			const updatedVotes = [...currentRound.votes];
+			updatedVotes[existingVoteIndex] = voteData;
+			currentRound = {
+				...currentRound,
+				votes: updatedVotes,
+			};
+		} else {
+			currentRound = {
+				...currentRound,
+				votes: [...currentRound.votes, voteData],
+			};
+		}
 
 		// Check if all voted
 		const votedPlayerIds = new Set(currentRound.votes.map((v) => v.playerId));
@@ -775,10 +825,22 @@ function submitGuess(guessedAuthorId: PlayerId): void {
 			takeId,
 			guessedAuthorId,
 		};
-		currentRound = {
-			...currentRound,
-			guesses: [...currentRound.guesses, guessData],
-		};
+
+		// Check if already guessed - update instead of adding duplicate
+		const existingGuessIndex = currentRound.guesses.findIndex((g) => g.playerId === myPlayerId);
+		if (existingGuessIndex !== -1) {
+			const updatedGuesses = [...currentRound.guesses];
+			updatedGuesses[existingGuessIndex] = guessData;
+			currentRound = {
+				...currentRound,
+				guesses: updatedGuesses,
+			};
+		} else {
+			currentRound = {
+				...currentRound,
+				guesses: [...currentRound.guesses, guessData],
+			};
+		}
 
 		// Check if all guessed
 		const currentTakeData = takes[currentRound.takeIndex];

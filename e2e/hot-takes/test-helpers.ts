@@ -13,17 +13,23 @@ export const TEST_TIMINGS = {
 	GUESSING_SECONDS: 2,
 };
 
+/** Base port for WebSocket bridge servers */
+const BASE_WS_PORT = 9876;
+
 export interface TestConfigOptions {
-	/** Use real PeerJS instead of mock (needed for multi-browser tests) */
-	useRealPeerJS?: boolean;
+	/** Use WebSocket bridge for multi-browser tests (contexts need to communicate) */
+	multiBrowser?: boolean;
 	/** Worker index for unique peer ID prefixes */
 	workerIndex?: number;
+	/** Port for the WebSocket bridge (for parallel workers). Defaults to 9876. */
+	bridgePort?: number;
 }
 
 /**
  * Inject all test overrides into a browser context.
- * By default, injects PeerJS mock for fast single-browser tests.
- * Use useMock: false for multi-browser tests that need real networking.
+ *
+ * For single-browser tests: Uses in-memory mock (fastest)
+ * For multi-browser tests: Uses WebSocket bridge mock (contexts can communicate)
  */
 export async function injectTestConfigToContext(
 	context: BrowserContext,
@@ -35,18 +41,24 @@ export async function injectTestConfigToContext(
 			? { workerIndex: workerIndexOrOptions }
 			: workerIndexOrOptions || {};
 
-	// By default, use mock for single-browser tests (faster)
-	// Multi-browser tests should pass useRealPeerJS: true
-	const useMock = !options.useRealPeerJS;
-
-	if (useMock) {
-		// Inject PeerJS mock for fast in-memory networking
-		await injectPeerJsMockToContext(context);
+	// For multi-browser tests, inject WebSocket URL so mock uses the bridge
+	if (options.multiBrowser) {
+		const port = options.bridgePort ?? BASE_WS_PORT;
+		const wsUrl = `ws://localhost:${port}`;
+		await context.addInitScript(
+			(url) => {
+				(window as unknown as Record<string, string>).__PEERJS_WS_URL__ = url;
+			},
+			wsUrl
+		);
 	}
 
-	// Inject timing overrides and peer ID prefix
+	// Inject PeerJS mock (will use bridge if __PEERJS_WS_URL__ is set)
+	await injectPeerJsMockToContext(context);
+
+	// Inject timing overrides
 	await context.addInitScript(
-		({ timings, workerIndex, useMock }) => {
+		({ timings }) => {
 			// Hot Takes timing overrides
 			(window as unknown as Record<string, number>).__TEST_HOT_TAKES_REVEAL_MS__ = timings.REVEAL_MS;
 			(window as unknown as Record<string, number>).__TEST_HOT_TAKES_VOTING_SECONDS__ =
@@ -55,13 +67,8 @@ export async function injectTestConfigToContext(
 				timings.GUESSING_SECONDS;
 			// Photo Roulette timing override
 			(window as unknown as Record<string, number>).__TEST_RESULT_DISPLAY_MS__ = 100;
-			// Peer ID prefix for worker isolation (needed for real PeerJS to avoid collisions)
-			if (workerIndex !== undefined && !useMock) {
-				(window as unknown as Record<string, string>).__TEST_PEER_ID_PREFIX__ =
-					`pr-test-w${workerIndex}-`;
-			}
 		},
-		{ timings: TEST_TIMINGS, workerIndex: options.workerIndex, useMock }
+		{ timings: TEST_TIMINGS }
 	);
 }
 

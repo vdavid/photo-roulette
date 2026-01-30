@@ -1,9 +1,12 @@
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
+import { injectTestConfigToContext } from './test-helpers';
 
-// Helper to navigate to Photo Roulette from game selector
+const BASE_WS_PORT = 9876;
+
+// Helper to navigate directly to Photo Roulette landing page
 async function selectPhotoRoulette(page: Page) {
-	await page.locator('.game-card').filter({ hasText: 'Photo Roulette' }).click();
-	await expect(page.getByRole('heading', { name: 'Photo Roulette' })).toBeVisible();
+	await page.goto('/?game=photo-roulette');
+	await expect(page.getByRole('button', { name: 'Host a game' })).toBeVisible();
 }
 
 /**
@@ -32,20 +35,21 @@ interface PlayerContext {
 }
 
 test.describe('Spectator mode', () => {
-	// Skip in CI - multi-browser tests need real PeerJS which requires network access
-	// Run locally with: pnpm exec playwright test e2e/spectator-mode.spec.ts
-	test.skip(!!process.env.CI, 'Multi-browser tests require real PeerJS network access');
+	// All tests now use WebSocket bridge mock - no skip needed
 
 	test.setTimeout(120000); // 2 minutes
 
 	let players: PlayerContext[] = [];
 	let roomCode: string;
 
-	test.beforeAll(async ({ browser }) => {
+	test.beforeAll(async ({ browser }, testInfo) => {
 		const playerNames = ['AAA', 'BBB', 'CCC'];
+		const bridgePort = BASE_WS_PORT + testInfo.parallelIndex;
 
 		for (const name of playerNames) {
 			const context = await browser.newContext();
+			// Inject test config with WebSocket bridge for multi-browser communication
+			await injectTestConfigToContext(context, { multiBrowser: true, bridgePort });
 			const page = await context.newPage();
 			players.push({ name, context, page });
 		}
@@ -62,15 +66,13 @@ test.describe('Spectator mode', () => {
 
 		// === PHASE 1: Host creates game ===
 		await test.step('Host creates game', async () => {
-			await host.page.goto('/');
+			// Select Photo Roulette from game selector
+			await selectPhotoRoulette(host.page);
 
 			await host.page.evaluate((resultDisplayMs) => {
 				(window as unknown as { __TEST_RESULT_DISPLAY_MS__: number }).__TEST_RESULT_DISPLAY_MS__ =
 					resultDisplayMs;
 			}, RESULT_DISPLAY_MS);
-
-			// Select Photo Roulette from game selector
-			await selectPhotoRoulette(host.page);
 
 			await host.page.getByRole('button', { name: 'Host a game' }).click();
 			await host.page.getByLabel('Your name').fill(host.name);
@@ -87,15 +89,13 @@ test.describe('Spectator mode', () => {
 		// === PHASE 2: Other players join ===
 		await test.step('Other players join', async () => {
 			for (const player of [player2, spectator]) {
-				await player.page.goto('/');
+				// Select Photo Roulette from game selector
+				await selectPhotoRoulette(player.page);
 
 				await player.page.evaluate((resultDisplayMs) => {
 					(window as unknown as { __TEST_RESULT_DISPLAY_MS__: number }).__TEST_RESULT_DISPLAY_MS__ =
 						resultDisplayMs;
 				}, RESULT_DISPLAY_MS);
-
-				// Select Photo Roulette from game selector
-				await selectPhotoRoulette(player.page);
 
 				await player.page.getByRole('button', { name: 'Join a game' }).click();
 				await player.page.getByLabel('Room code').fill(roomCode);

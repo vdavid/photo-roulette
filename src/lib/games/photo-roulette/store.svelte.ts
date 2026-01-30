@@ -41,7 +41,7 @@ import {
 	createPhotoPool,
 	selectFairPhoto,
 	createRound,
-	addGuess,
+	updateGuess,
 	completeRound,
 	allPlayersGuessed,
 } from './logic/round.js';
@@ -346,6 +346,15 @@ function createGameStore() {
 				internalState.phase
 			);
 
+			// Broadcast new player to all existing players
+			hostNetwork!.broadcastPlayerUpdate(playerId, {
+				name,
+				emoji,
+				isReady: false,
+				isSpectator: false,
+				photoIds: [],
+			});
+
 			syncState();
 			log('info', 'Player joined', { playerId, name });
 		});
@@ -390,7 +399,7 @@ function createGameStore() {
 
 			if (!internalState.currentRound) return;
 
-			internalState.currentRound = addGuess(internalState.currentRound, guess);
+			internalState.currentRound = updateGuess(internalState.currentRound, guess);
 			guessCount = internalState.currentRound.guesses.length;
 
 			// Check if all players have guessed
@@ -481,6 +490,19 @@ function createGameStore() {
 			if (player) {
 				Object.assign(player, updates);
 				players = [...players];
+			} else {
+				// New player joined - add them to the list
+				const newPlayer: Player = {
+					id: playerId,
+					name: updates.name ?? 'Unknown',
+					emoji: updates.emoji ?? '🐰',
+					photoIds: updates.photoIds ?? [],
+					isHost: false,
+					isReady: updates.isReady ?? false,
+					isConnected: true,
+					isSpectator: updates.isSpectator ?? false,
+				};
+				players = [...players, newPlayer];
 			}
 		});
 
@@ -854,7 +876,7 @@ function createGameStore() {
 
 		if (isHost) {
 			if (internalState.currentRound) {
-				internalState.currentRound = addGuess(internalState.currentRound, guess);
+				internalState.currentRound = updateGuess(internalState.currentRound, guess);
 				guessCount = internalState.currentRound.guesses.length;
 
 				const playerIds = internalState.players.map((p) => p.id);

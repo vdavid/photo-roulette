@@ -1,10 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-// Helper to navigate to Photo Roulette from game selector
+// Helper to navigate directly to Photo Roulette landing page
 async function selectPhotoRoulette(page: import('@playwright/test').Page) {
-	await page.goto('/');
-	await page.locator('.game-card').filter({ hasText: 'Photo Roulette' }).click();
-	await expect(page.getByRole('heading', { name: 'Photo Roulette' })).toBeVisible();
+	await page.goto('/?game=photo-roulette');
+	await expect(page.getByRole('button', { name: 'Host a game' })).toBeVisible();
 }
 
 test.describe('Photo Roulette landing page', () => {
